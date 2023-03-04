@@ -1,14 +1,17 @@
+import { getProperties } from "./properties";
+
 /**
  * Responds to a received message.
  *
- * @param {Object} event event object
+ * @param event event object
  */
-function onMessage(event) {
+function onMessage(event: GoogleAppsScript.Addons.EventObject): object {
   console.info("onMessage with event:\n" + JSON.stringify(event, null, 2));
 
-  var message = "Found " + Object.keys(getProperties()).length + " properties";
+  const message =
+    "Found " + Object.keys(getProperties()).length + " properties";
 
-  return { "text": message };
+  return { text: message };
 }
 
 /**
@@ -30,4 +33,3 @@ function onAddToSpace(event) {
 function onRemoveFromSpace(event) {
 }
 */
-

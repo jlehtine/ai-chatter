@@ -5,4 +5,5 @@
 .*.swp
 node_modules
 /.husky/_/
-/apps-script/*.js
+/appsscript/*.js
+/appsscript/*.js.map
