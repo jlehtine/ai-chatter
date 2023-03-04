@@ -3,7 +3,7 @@ const GasPlugin = require("gas-webpack-plugin");
 
 module.exports = {
   mode: "production",
-  entry: "./src/ai-chatter.ts",
+  entry: "./src/AIChatter.ts",
   module: {
     rules: [
       {
@@ -17,7 +17,7 @@ module.exports = {
     extensions: [".ts"],
   },
   output: {
-    filename: "ai-chatter.js",
+    filename: "AIChatter.js",
     path: path.resolve(__dirname, "appsscript"),
   },
   optimization: {

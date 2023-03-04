@@ -1,5 +1,5 @@
-import { isChatError } from "./errors";
-import { checkProperties } from "./properties";
+import { isChatError } from "./Errors";
+import { checkProperties } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 
 /**

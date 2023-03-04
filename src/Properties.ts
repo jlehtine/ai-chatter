@@ -1,4 +1,4 @@
-import { ChatError } from "./errors";
+import { ChatError } from "./Errors";
 
 /** Cached script properties */
 let scriptProperties: GoogleAppsScript.Properties.Properties;
