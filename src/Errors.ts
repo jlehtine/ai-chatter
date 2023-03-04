@@ -2,17 +2,17 @@
  * An error that has a message which can be returned to the chat.
  */
 export class ChatError extends Error {
-  chatError = true;
-  constructor(message: string, name = "ChatError") {
-    super(message);
-    this.name = name;
-  }
+    chatError = true;
+    constructor(message: string, name = "ChatError") {
+        super(message);
+        this.name = name;
+    }
 }
 
 export function isChatError(err: any): boolean {
-  return typeof err === "object" && err.chatError === true;
+    return typeof err === "object" && err.chatError === true;
 }
 
 export function logError(err: any): void {
-  console.error(err.stack || err.message || err);
+    console.error(err.stack || err.message || err);
 }
