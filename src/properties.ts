@@ -1,8 +1,15 @@
+import { ChatError } from "./errors";
+
 /** Cached script properties */
 let scriptProperties: GoogleAppsScript.Properties.Properties;
 
 /** Cached properties */
 let properties: { [key: string]: string };
+
+/** Property keys */
+enum PropertyKey {
+  OPENAI_API_KEY = "OPENAI_API_KEY",
+}
 
 /**
  * Returns the cached script properties.
@@ -76,4 +83,23 @@ export function setObjectProperty(property: string, value: object) {
 export function deleteProperty(property: string) {
   getScriptProperties().deleteProperty(property);
   delete getProperties()[property];
+}
+
+/**
+ * Signals an error in script configuration.
+ */
+export class ScriptConfigurationError extends ChatError {
+  constructor(message: string) {
+    super(message, "ScriptConfigurationError");
+  }
+}
+
+/**
+ * Checks properties and throws an exception if there is a configuration issue.
+ */
+export function checkProperties(): void {
+  if (typeof getStringProperty(PropertyKey.OPENAI_API_KEY) !== "string") {
+    const errorMessage = "Mandatory script property missing: " + PropertyKey.OPENAI_API_KEY;
+    throw new ScriptConfigurationError(errorMessage);
+  }
 }
