@@ -1,15 +1,23 @@
 import { ChatError } from "./Errors";
 
+const PROPERTY_SAFE_LENGTH = 9000;
+
+/** Property keys */
+export enum PropertyKey {
+  OPENAI_API_KEY = "OPENAI_API_KEY",
+  HISTORY_MINUTES = "HISTORY_MINUTES",
+}
+
 /** Cached script properties */
 let scriptProperties: GoogleAppsScript.Properties.Properties;
 
 /** Cached properties */
 let properties: { [key: string]: string };
 
-/** Property keys */
-enum PropertyKey {
-  OPENAI_API_KEY = "OPENAI_API_KEY",
-}
+/** Default properties */
+const defaultProperties: { [key: string]: string } = {
+  [PropertyKey.HISTORY_MINUTES]: "60",
+};
 
 /**
  * Returns the cached script properties.
@@ -39,8 +47,13 @@ export function getProperties(): { [key: string]: string } {
  * @param property property name
  * @return property value as a string, or undefined if not set
  */
-export function getStringProperty(property: string) {
-  return getProperties()[property];
+export function getStringProperty(property: string): string | undefined {
+  const str = getProperties()[property];
+  if (typeof str === "string") {
+    return str;
+  } else {
+    return defaultProperties[property];
+  }
 }
 
 /**
@@ -55,6 +68,21 @@ export function setStringProperty(property: string, value: string) {
 }
 
 /**
+ * Returns a numeric property.
+ *
+ * @param property property name
+ * @return property value as a number, or undefined if not set
+ */
+export function getNumberProperty(property: string): number | undefined {
+  const str = getStringProperty(property);
+  if (typeof str === "string") {
+    return Number(str);
+  } else {
+    return undefined;
+  }
+}
+
+/**
  * Returns an object valued property.
  *
  * @param property property name
@@ -62,7 +90,11 @@ export function setStringProperty(property: string, value: string) {
  */
 export function getObjectProperty(property: string): object | undefined {
   const str = getStringProperty(property);
-  return typeof str !== "undefined" ? JSON.parse(str) : undefined;
+  if (typeof str === "string") {
+    return JSON.parse(str);
+  } else {
+    return undefined;
+  }
 }
 
 /**

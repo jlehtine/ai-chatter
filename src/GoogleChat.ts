@@ -1,3 +1,5 @@
+import { MillisSinceEpoch } from "./Timestamp";
+
 // Google Chat types
 
 export interface Event {
@@ -25,13 +27,17 @@ export interface CommonEventObject {
 export interface Message {
   name: string;
   sender: User;
-  createTime: string;
+  createTime: ChatTime;
   text: string;
   thread: Thread;
   space: Space;
   fallbackText: string;
   argumentText: string;
-  slashCommand?: SlashCommand;
+}
+
+export interface ChatTime {
+  seconds: number;
+  nanos: number;
 }
 
 export interface ResponseMessage {
@@ -54,10 +60,20 @@ export interface Thread {
 }
 
 export interface Space {
-  singleUserBotDm: boolean;
   name: string;
+  singleUserBotDm: boolean;
+  spaceThreadingState: SpaceThreadingState;
 }
 
-export interface SlashCommand {
-  commandId: string;
+export type SpaceThreadingState =
+  | "SPACE_THREADING_STATE_UNSPECIFIED"
+  | "THREADED_MESSAGES"
+  | "GROUPED_MESSAGES"
+  | "UNTHREADED_MESSAGES";
+
+/**
+ * Converts the specified chat time to seconds since epoch.
+ */
+export function toMillisSinceEpoch(time: ChatTime): MillisSinceEpoch {
+  return time.seconds * 1000 + time.nanos / 1000000;
 }

@@ -12,3 +12,7 @@ export class ChatError extends Error {
 export function isChatError(err: any): boolean {
   return typeof err === "object" && err.chatError === true;
 }
+
+export function logError(err: any): void {
+  console.error(err.stack || err.message || err);
+}

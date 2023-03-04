@@ -1,6 +1,7 @@
-import { isChatError } from "./Errors";
+import { ChatError, isChatError, logError } from "./Errors";
 import { checkProperties } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
+import { getHistory } from "./History";
 
 /**
  * Responds to a received message.
@@ -11,6 +12,8 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
     checkProperties();
 
     // Store history
+    const history = getHistory(event.message);
+    console.log("history = " + JSON.stringify(history, null, 2));
 
     const message = "Hello, " + event.user.displayName + "!";
 
@@ -49,10 +52,11 @@ function responseMessage(text: string): GoogleChat.ResponseMessage {
 /**
  * Handles an error and returns a suitable chat response value.
  */
-function errorResponse(err: any): GoogleChat.BotResponse {
-  console.error(err.stack || err.message || err);
+function errorResponse(err: unknown): GoogleChat.BotResponse {
+  logError(err);
   if (isChatError(err)) {
-    return responseMessage("ERROR: " + err.message);
+    const chatErr = err as ChatError;
+    return responseMessage("ERROR: " + chatErr.message);
   }
 }
 
