@@ -1,15 +1,15 @@
-import { getProperties } from "./properties";
+import * as props from "./properties";
 
 /**
  * Responds to a received message.
  *
  * @param event event object
  */
-function onMessage(event: GoogleAppsScript.Addons.EventObject): object {
+function onMessage(event: object): object {
   console.info("onMessage with event:\n" + JSON.stringify(event, null, 2));
 
   const message =
-    "Found " + Object.keys(getProperties()).length + " properties";
+    "Found " + Object.keys(props.getProperties()).length + " properties";
 
   return { text: message };
 }
@@ -33,3 +33,9 @@ function onAddToSpace(event) {
 function onRemoveFromSpace(event) {
 }
 */
+
+// Export required globals
+declare global {
+  function onMessage(event: object): object;
+}
+globalThis.onMessage = onMessage;

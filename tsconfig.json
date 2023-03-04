@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
     "outDir": "appsscript",
+    "target": "es5",
+    "module": "es6",
+    "moduleResolution": "node",
     "removeComments": true,
-    "strict": true,
     "sourceMap": true,
+    "strict": true,
     "skipLibCheck": true
   }
 }
