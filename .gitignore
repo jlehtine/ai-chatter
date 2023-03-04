@@ -1,1 +1,8 @@
 .clasp.json
+.metadata
+.project
+.settings
+.*.swp
+node_modules
+/.husky/_/
+/apps-script/*.js

@@ -1,0 +1,28 @@
+{
+  "private": true,
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@typescript-eslint/eslint-plugin": "^5.54.0",
+    "@typescript-eslint/parser": "^5.54.0",
+    "eslint": "^8.35.0",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-googleappsscript": "^1.0.4",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.1.2",
+    "prettier": "^2.8.4",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "@types/google-apps-script": "^1.0.57"
+  },
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint-fix": "eslint --fix 'src/**/*.ts'",
+    "format": "prettier --ignore-path .gitignore --write ."
+  },
+  "lint-staged": {
+    "**/*.ts": "eslint",
+    "**/*": "prettier --write --ignore-unknown"
+  }
+}

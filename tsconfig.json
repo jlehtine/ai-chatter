@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "outDir": "appsscript",
+    "removeComments": true,
+    "strict": true,
+    "sourceMap": true,
+    "skipLibCheck": true
+  }
+}
