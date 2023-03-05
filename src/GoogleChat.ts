@@ -136,29 +136,47 @@ export function textResponse(text: string): ResponseMessage {
 /**
  * Returns a response that displays a card with decorated text and a header.
  */
-export function decoratedTextResponse(header: string, text: string, formattedHeader?: string): ResponseMessage {
-    return {
-        cardsV2: [
-            {
-                cardId: "errorCard",
-                card: {
-                    sections: [
+export function decoratedTextResponse(
+    cardId: string,
+    header: string,
+    text: string,
+    formattedHeader?: string
+): ResponseMessage {
+    const message: ResponseMessage = {};
+    addDecoratedTextCard(message, cardId, header, text, formattedHeader);
+    return message;
+}
+
+/**
+ * Adds a card with a decorated text section to the specified message.
+ */
+export function addDecoratedTextCard(
+    message: ResponseMessage,
+    cardId: string,
+    header: string,
+    text: string,
+    formattedHeader?: string
+): void {
+    if (!message.cardsV2) {
+        message.cardsV2 = [];
+    }
+    message.cardsV2.push({
+        cardId: cardId,
+        card: {
+            sections: [
+                {
+                    header: formattedHeader ?? header,
+                    widgets: [
                         {
-                            header: formattedHeader ?? header,
-                            widgets: [
-                                {
-                                    decoratedText: {
-                                        text: text,
-                                        wrapText: true,
-                                    },
-                                },
-                            ],
-                            collapsible: false,
+                            decoratedText: {
+                                text: text,
+                                wrapText: true,
+                            },
                         },
                     ],
+                    collapsible: false,
                 },
-            },
-        ],
-        fallbackText: header + "\n" + text,
-    };
+            ],
+        },
+    });
 }

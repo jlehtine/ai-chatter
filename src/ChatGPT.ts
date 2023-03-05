@@ -1,6 +1,7 @@
 import { ChatError } from "./Errors";
 import { ChatHistory, ChatHistoryMessage } from "./History";
-import { getBooleanProperty, getObjectProperty, getStringProperty } from "./Properties";
+import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProperty } from "./Properties";
+import * as GoogleChat from "./GoogleChat";
 
 interface ChatGPTCompletionRequest {
     model: string;
@@ -43,7 +44,7 @@ class ChatGPTCompletionError extends ChatError {
     }
 }
 
-const USER_ASSISTANT = "__ChatGPT__";
+export const USER_ASSISTANT = "__ChatGPT__";
 
 export const PROP_OPENAI_API_KEY = "OPENAI_API_KEY";
 const PROP_CHATGPT_INIT = "CHATGPT_INIT";
@@ -66,10 +67,11 @@ const MONTH_NAMES = [
 
 /**
  * Requests and returns a ChatGPT completion for the specified chat history.
- * Returns an empty string as response text if ChatGPT remains silent.
- * The caller is responsible for storing the response message in chat history.
+ * Returns null if ChatGPT remains silent.
+ * Updates the specified history with the ChatGPT response.
+ * The caller is responsible for persisting the history.
  */
-export function requestChatGPTCompletion(history: ChatHistory): ChatHistoryMessage {
+export function requestChatGPTCompletion(history: ChatHistory): GoogleChat.BotResponse {
     const url = getChatCompletionsURL();
     const apiKey = getOpenAIAPIKey();
     const request = createChatGPTCompletionRequest(history);
@@ -85,10 +87,11 @@ export function requestChatGPTCompletion(history: ChatHistory): ChatHistoryMessa
     if (getLogChatGPT()) {
         console.log("ChatGPT request:\n" + JSON.stringify(request, null, 2));
     }
+    let response: ChatGPTCompletionResponse;
     let responseMessage: ChatHistoryMessage;
     try {
         const httpResponse = UrlFetchApp.fetch(url, params);
-        const response = toChatGPTCompletionResponse(httpResponse);
+        response = toChatGPTCompletionResponse(httpResponse);
         if (getLogChatGPT()) {
             console.log("ChatGPT response:\n" + JSON.stringify(response, null, 2));
         }
@@ -101,6 +104,7 @@ export function requestChatGPTCompletion(history: ChatHistory): ChatHistoryMessa
                 user: USER_ASSISTANT,
                 text: response.choices[0].message.content.trim(),
             };
+            history.messages.push(responseMessage);
         } catch (err) {
             console.log("ChatGPT completion response was:\n" + JSON.stringify(response, null, 2));
             throw err;
@@ -108,7 +112,29 @@ export function requestChatGPTCompletion(history: ChatHistory): ChatHistoryMessa
     } catch (err) {
         throw new ChatGPTCompletionError("Error while performing a ChatGPT completion", err);
     }
-    return responseMessage;
+
+    // Format response
+    const showTokens = getShowTokens();
+    if (responseMessage.text || showTokens) {
+        const chatResponse = GoogleChat.textResponse(responseMessage.text);
+        if (showTokens) {
+            let tokenUsage =
+                "Prompt tokens: " +
+                response.usage.prompt_tokens +
+                "\nCompletion tokens: " +
+                response.usage.completion_tokens +
+                "\nTotal tokens: " +
+                response.usage.total_tokens;
+            const tokenPrice = getTokenPrice();
+            if (typeof tokenPrice === "number") {
+                tokenUsage += "\nTotal cost: $" + tokenPrice * response.usage.total_tokens;
+            }
+            GoogleChat.addDecoratedTextCard(chatResponse, "tokens", "Token usage", tokenUsage);
+        }
+        return chatResponse;
+    } else {
+        return undefined;
+    }
 }
 
 function createChatGPTCompletionRequest(history: ChatHistory): ChatGPTCompletionRequest {
@@ -206,4 +232,12 @@ function toChatGPTCompletionResponse(response: GoogleAppsScript.URL_Fetch.HTTPRe
 
 function isOkResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): boolean {
     return response.getResponseCode() === 200;
+}
+
+function getShowTokens(): boolean {
+    return getBooleanProperty("SHOW_TOKENS") ?? false;
+}
+
+function getTokenPrice(): number | void {
+    return getNumberProperty("CHATGPT_TOKEN_PRICE");
 }

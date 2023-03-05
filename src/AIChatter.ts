@@ -19,9 +19,9 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
         const history = getHistory(event.message);
 
         // Get ChatGPT completion
-        let completionMessage: ChatHistoryMessage;
+        let completionResponse: GoogleChat.BotResponse;
         try {
-            completionMessage = requestChatGPTCompletion(history);
+            completionResponse = requestChatGPTCompletion(history);
         } catch (err) {
             // If something goes wrong then save at least the input message in history
             saveHistory(history);
@@ -29,15 +29,10 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
         }
 
         // Store ChatGPT answer in history
-        history.messages.push(completionMessage);
         saveHistory(history);
 
         // Return completion, unless keeping silent
-        if (completionMessage.text === "") {
-            return undefined;
-        } else {
-            return GoogleChat.textResponse(completionMessage.text);
-        }
+        return completionResponse;
     } catch (err) {
         return errorResponse(err);
     }
