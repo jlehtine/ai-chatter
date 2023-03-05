@@ -41,7 +41,55 @@ export interface ChatTime {
 }
 
 export interface ResponseMessage {
+    text?: string;
+    cardsV2?: Array<Card>;
+    fallbackText?: string;
+}
+
+export interface Card {
+    cardId: string;
+    card: CardContent;
+}
+
+export interface CardContent {
+    header?: CardHeader;
+    sections?: Array<CardSection>;
+}
+
+export interface CardHeader {
+    title: string;
+    subtitle?: string;
+}
+
+export interface CardSection {
+    header: string;
+    widgets: Array<CardWidget>;
+    collapsible?: boolean;
+}
+
+export type CardWidget = TextParagraphWidget | DecoratedTextWidget | DividerWidget;
+
+export interface TextParagraphWidget {
+    textParagraph: TextParagraph;
+}
+
+export interface DecoratedTextWidget {
+    decoratedText: DecoratedText;
+}
+
+export interface DividerWidget {
+    divider: object;
+}
+
+export interface TextParagraph {
     text: string;
+}
+
+export interface DecoratedText {
+    topLabel?: string;
+    text: string;
+    wrapText?: boolean;
+    bottomLabel?: string;
 }
 
 export type BotResponse = ResponseMessage | void;
@@ -76,4 +124,34 @@ export type SpaceThreadingState =
  */
 export function toMillisSinceEpoch(time: ChatTime): MillisSinceEpoch {
     return time.seconds * 1000 + time.nanos / 1000000;
+}
+
+/**
+ * Returns a response that displays a card with decorated text and a header.
+ */
+export function decoratedTextResponse(header: string, text: string, formattedHeader?: string): ResponseMessage {
+    return {
+        cardsV2: [
+            {
+                cardId: "errorCard",
+                card: {
+                    sections: [
+                        {
+                            header: formattedHeader ?? header,
+                            widgets: [
+                                {
+                                    decoratedText: {
+                                        text: text,
+                                        wrapText: true,
+                                    },
+                                },
+                            ],
+                            collapsible: false,
+                        },
+                    ],
+                },
+            },
+        ],
+        fallbackText: header + "\n" + text,
+    };
 }

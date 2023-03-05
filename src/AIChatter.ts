@@ -1,4 +1,5 @@
 import { requestChatGPTCompletion } from "./ChatGPT";
+import { checkForCommand } from "./Commands";
 import { ChatError, isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { ChatHistoryMessage, getHistory, saveHistory } from "./History";
@@ -8,6 +9,12 @@ import { ChatHistoryMessage, getHistory, saveHistory } from "./History";
  */
 function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
     try {
+        // Check if the message includes a command
+        const commandResponse = checkForCommand(event);
+        if (commandResponse) {
+            return commandResponse;
+        }
+
         // Get chat history complemented with the input message
         const history = getHistory(event.message);
 
@@ -66,10 +73,13 @@ function responseMessage(text: string): GoogleChat.ResponseMessage {
  */
 function errorResponse(err: unknown): GoogleChat.BotResponse {
     logError(err);
+    let errorMessage;
     if (isChatError(err)) {
-        const chatErr = err as ChatError;
-        return responseMessage("ERROR: " + chatErr.message);
+        errorMessage = err.message;
+    } else {
+        errorMessage = "Something went wrong...";
     }
+    return GoogleChat.decoratedTextResponse("ERROR", errorMessage, '<font color="#ff0000"><b>ERROR<b/></font>');
 }
 
 // Export required globals
