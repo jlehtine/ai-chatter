@@ -51,7 +51,6 @@ export function getHistory(message: GoogleChat.Message, asIs = false): ChatHisto
         pruneHistory(history);
         if (!asIs) {
             history.messages.push(toChatHistoryMessage(message));
-            history.messages.sort((h1, h2) => h1.time - h2.time);
         }
     } else {
         history = createChatHistory(message);
