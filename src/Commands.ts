@@ -1,4 +1,4 @@
-import { PROP_OPENAI_API_KEY } from "./ChatGPT";
+import { PROP_OPENAI_API_KEY, requestChatGPTCompletion, USER_ASSISTANT } from "./ChatGPT";
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
@@ -16,10 +16,13 @@ Usage:\n\
 \n\
 Commands:\n\
   /help                    show this help text\n\
+  /again                   get another completion\n\
   /history [clear]         show or clear chat history\n\
   /show [<property>...]    show all or specified properties\n\
   /set <property> <value>  set the specified property\n\
 ```";
+
+const INVALID_ARGS_MSG = "Invalid command arguments";
 
 /** Property listing admin users */
 const PROP_ADMINS = "ADMINS";
@@ -33,7 +36,7 @@ class UnauthorizedError extends CommandError {}
  * If a command is found then returns a response to be returned to the user.
  * Otherwise returns undefined.
  */
-export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.ResponseMessage | undefined {
+export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
     // Check if not a command
     const text = event.message?.argumentText;
     if (typeof text !== "string" || !text.trim().startsWith(COMMAND_PREFIX)) {
@@ -49,6 +52,8 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Re
     const arg = match[2];
     if (cmd === "help") {
         return commandHelp();
+    } else if (cmd === "again") {
+        return commandAgain(arg, event.message);
     } else if (cmd === "history") {
         return commandHistory(arg, event.message);
     } else if (cmd === "show") {
@@ -83,13 +88,34 @@ function commandHelp(): GoogleChat.ResponseMessage {
     return GoogleChat.textResponse(HELP_TEXT);
 }
 
+function commandAgain(arg: string | undefined, message: GoogleChat.Message): GoogleChat.BotResponse {
+    // No arguments expected
+    if (typeof arg !== "undefined") {
+        throw new CommandError(INVALID_ARGS_MSG);
+    }
+
+    // Get history without last reponse, if it was from the bot
+    const history = getHistory(message, true);
+    if (history.messages.length > 0 && history.messages[history.messages.length - 1].user === USER_ASSISTANT) {
+        history.messages.splice(history.messages.length - 1, 1);
+    }
+
+    // Request new ChatGPT completion
+    const completionResponse = requestChatGPTCompletion(history);
+
+    // Save history with new response
+    saveHistory(history);
+
+    return completionResponse;
+}
+
 function commandHistory(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
     const history = getHistory(message, true);
     if (typeof arg === "string" && arg.trim() === "clear") {
         history.messages = [];
         saveHistory(history);
     } else if (typeof arg !== "undefined") {
-        throw new CommandError("Invalid command arguments");
+        throw new CommandError(INVALID_ARGS_MSG);
     }
     return GoogleChat.textResponse("```\n" + JSON.stringify(history, null, 2).replace("```", "") + "\n```");
 }
@@ -153,6 +179,6 @@ function commandSet(arg: string | undefined, message: GoogleChat.Message): Googl
         }
         return GoogleChat.textResponse("```\n" + key + (value ? ": " + value : " is undefined") + "\n```");
     } else {
-        throw new CommandError("Invalid command arguments");
+        throw new CommandError(INVALID_ARGS_MSG);
     }
 }
