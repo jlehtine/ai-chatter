@@ -25,7 +25,8 @@
         "lint-fix": "eslint --fix 'src/**/*.ts'",
         "format": "prettier --ignore-path .gitignore --write .",
         "clean": "rm -f appsscript/*.js appsscript/*.js.map",
-        "build": "npx webpack"
+        "build": "npx webpack",
+        "deploy": "npx clasp push"
     },
     "lint-staged": {
         "**/*.ts": "eslint",
