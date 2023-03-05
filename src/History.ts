@@ -12,43 +12,64 @@ import { logError } from "./Errors";
 
 const HISTORY_PREFIX = "_history/";
 
-/** History for a chat thread */
-export type ThreadHistory = Array<HistoryMessage>;
+/** History for a chat or a chat thread */
+export interface ChatHistory {
+    space: string;
+    thread?: string;
+    messages: Array<ChatHistoryMessage>;
+}
 
-/** One message in a chat thread history */
-export interface HistoryMessage {
+/** One message in a chat history */
+export interface ChatHistoryMessage {
     time: MillisSinceEpoch;
     user: string;
     text: string;
 }
 
+function isChatHistory(obj: unknown): obj is ChatHistory {
+    const spaceType = typeof (obj as ChatHistory)?.space;
+    const threadType = typeof (obj as ChatHistory)?.thread;
+    const messages = (obj as ChatHistory)?.messages;
+    return spaceType === "string" && (threadType === "string" || threadType === "undefined") && Array.isArray(messages);
+}
+
+/**
+ *  Creates a new chat history from a Google Chat message.
+ */
+function newChatHistory(message: GoogleChat.Message): ChatHistory {
+    return {
+        space: message.space.name,
+        thread: message.space.spaceThreadingState === "UNTHREADED_MESSAGES" ? undefined : message.thread.name,
+        messages: [toChatHistoryMessage(message)],
+    };
+}
+
 /**
  * Returns chat history for the specified message, including the new message.
  */
-export function getHistory(message: GoogleChat.Message): ThreadHistory {
+export function getHistory(message: GoogleChat.Message): ChatHistory {
     // Check if history exists and create a new or add to existing
-    const historyProp =
-        HISTORY_PREFIX +
-        (message.space.spaceThreadingState === "UNTHREADED_MESSAGES" ? message.space.name : message.thread.name);
-    const historyMessage = toHistoryMessage(message);
-    let history = getObjectProperty(historyProp) as ThreadHistory;
-    if (typeof history !== "undefined") {
+    const historyProp = getHistoryPropertyKey(message);
+    const historyObj = getObjectProperty(historyProp);
+    let history: ChatHistory;
+    if (isChatHistory(historyObj)) {
+        history = historyObj;
         pruneHistory(history);
+        history.messages.push(toChatHistoryMessage(message));
+        history.messages.sort((h1, h2) => h1.time - h2.time);
     } else {
-        history = [];
+        history = newChatHistory(message);
     }
-    history.push(historyMessage);
-    history.sort((h1, h2) => h1.time - h2.time);
 
     // Save history, pruning it on failure (assuming too long value)
     let saved = false;
-    while (!saved && history.length > 0) {
+    while (!saved && history.messages.length > 0) {
         try {
             setObjectProperty(historyProp, history);
             saved = true;
         } catch (err: unknown) {
             logError(err);
-            history.splice(0, 1);
+            history.messages.splice(0, 1);
         }
     }
     if (!saved) {
@@ -65,10 +86,18 @@ export function getHistory(message: GoogleChat.Message): ThreadHistory {
     return history;
 }
 
+/** Returns the history property key for a chat message */
+function getHistoryPropertyKey(message: GoogleChat.Message): string {
+    return (
+        HISTORY_PREFIX +
+        (message.space.spaceThreadingState === "UNTHREADED_MESSAGES" ? message.space.name : message.thread.name)
+    );
+}
+
 /**
  * Converts the specified Google Chat message to a history entry.
  */
-function toHistoryMessage(message: GoogleChat.Message): HistoryMessage {
+function toChatHistoryMessage(message: GoogleChat.Message): ChatHistoryMessage {
     return {
         time: Math.floor(GoogleChat.toMillisSinceEpoch(message.createTime)),
         user: message.sender.displayName,
@@ -79,16 +108,17 @@ function toHistoryMessage(message: GoogleChat.Message): HistoryMessage {
 /**
  * Prunes expired records from the history.
  */
-function pruneHistory(history: ThreadHistory): void {
+function pruneHistory(history: ChatHistory): void {
     const historyMillis = getHistoryMillis();
     const now: MillisSinceEpoch = millisNow();
+    const messages = history.messages;
     let i;
-    for (i = 0; i < history.length; i++) {
-        if (differenceMillis(now, history[i].time) <= historyMillis) {
+    for (i = 0; i < messages.length; i++) {
+        if (differenceMillis(now, messages[i].time) <= historyMillis) {
             break;
         }
     }
-    history.splice(0, i);
+    messages.splice(0, i);
 }
 
 /**
@@ -100,8 +130,18 @@ function pruneHistories(): void {
     const props = getProperties();
     for (const propKey in Object.keys(props)) {
         if (propKey.startsWith(HISTORY_PREFIX)) {
-            const history = JSON.parse(props[propKey]) as ThreadHistory;
-            if (history.length === 0 || differenceMillis(now, history[history.length - 1].time) > historyMillis) {
+            const history = JSON.parse(props[propKey]);
+            if (isChatHistory(history)) {
+                const messages = history.messages;
+                if (
+                    messages.length === 0 ||
+                    differenceMillis(now, messages[messages.length - 1].time) > historyMillis
+                ) {
+                    // Delete an expired history
+                    deleteProperty(propKey);
+                }
+            } else {
+                // Delete an invalid property
                 deleteProperty(propKey);
             }
         }

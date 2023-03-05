@@ -76,13 +76,15 @@ export function getNumberProperty(property: string): number | undefined {
  * @param property property name
  * @return property value as an object, or undefined if not set
  */
-export function getObjectProperty(property: string): object | undefined {
+export function getObjectProperty(property: string): unknown {
     const str = getStringProperty(property);
     if (typeof str === "string") {
-        return JSON.parse(str);
-    } else {
-        return undefined;
+        const obj = JSON.parse(str);
+        if (typeof obj === "object") {
+            return obj;
+        }
     }
+    return undefined;
 }
 
 /**
@@ -91,7 +93,10 @@ export function getObjectProperty(property: string): object | undefined {
  * @param property property name
  * @param value property value
  */
-export function setObjectProperty(property: string, value: object) {
+export function setObjectProperty(property: string, value: unknown) {
+    if (typeof value !== "object") {
+        throw new Error("Not an object");
+    }
     setStringProperty(property, JSON.stringify(value));
 }
 
