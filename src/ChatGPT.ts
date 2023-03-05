@@ -1,6 +1,6 @@
 import { ChatError } from "./Errors";
 import { ChatHistory, ChatHistoryMessage } from "./History";
-import { getStringProperty } from "./Properties";
+import { getBooleanProperty, getObjectProperty, getStringProperty } from "./Properties";
 
 interface ChatGPTCompletionRequest {
     model: string;
@@ -44,7 +44,25 @@ class ChatGPTCompletionError extends ChatError {
 }
 
 const USER_ASSISTANT = "__ChatGPT__";
+
 export const PROP_OPENAI_API_KEY = "OPENAI_API_KEY";
+const PROP_CHATGPT_INIT = "CHATGPT_INIT";
+
+const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [];
+
+const MONTH_NAMES = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "November",
+    "December",
+];
 
 /**
  * Requests and returns a ChatGPT completion for the specified chat history.
@@ -64,16 +82,22 @@ export function requestChatGPTCompletion(history: ChatHistory): ChatHistoryMessa
         contentType: "application/json",
         payload: JSON.stringify(request),
     };
+    if (getLogChatGPT()) {
+        console.log("ChatGPT request:\n" + JSON.stringify(request, null, 2));
+    }
     let responseMessage: ChatHistoryMessage;
     try {
         const httpResponse = UrlFetchApp.fetch(url, params);
         const response = toChatGPTCompletionResponse(httpResponse);
+        if (getLogChatGPT()) {
+            console.log("ChatGPT response:\n" + JSON.stringify(response, null, 2));
+        }
         try {
             if ((response.choices?.length ?? 0) < 1 || typeof response.choices[0].message?.content !== "string") {
                 throw new Error("No completion content available");
             }
             responseMessage = {
-                time: response.created,
+                time: response.created * 1000,
                 user: USER_ASSISTANT,
                 text: response.choices[0].message.content.trim(),
             };
@@ -90,7 +114,7 @@ export function requestChatGPTCompletion(history: ChatHistory): ChatHistoryMessa
 function createChatGPTCompletionRequest(history: ChatHistory): ChatGPTCompletionRequest {
     return {
         model: getModel(),
-        messages: toChatGPTMessages(history.messages),
+        messages: getInit().concat(toChatGPTMessages(history.messages)),
     };
 }
 
@@ -107,8 +131,45 @@ function getOpenAIAPIKey(): string {
     }
 }
 
+function getLogChatGPT(): boolean {
+    return getBooleanProperty("LOG_CHATGPT") ?? false;
+}
+
 function getModel(): string {
     return getStringProperty("CHATGPT_MODEL") ?? "gpt-3.5-turbo";
+}
+
+function getInit(): ChatGPTMessage[] {
+    const init = getObjectProperty(PROP_CHATGPT_INIT) ?? DEFAULT_CHATGPT_INIT;
+    if (!isValidInit(init)) {
+        throw new ChatGPTConfigurationError("Invalid initialization sequence: " + PROP_CHATGPT_INIT);
+    }
+    return init.map((msg) => ({
+        role: msg.role,
+        content: filteredInitContent(msg.content),
+    }));
+}
+
+function isValidInit(obj: unknown): obj is ChatGPTMessage[] {
+    if (!Array.isArray(obj)) {
+        return false;
+    }
+    return obj.every((member) => {
+        const msg = member as ChatGPTMessage;
+        return (
+            (msg?.role === "system" || msg?.role === "user" || msg?.role === "assistant") &&
+            typeof msg?.content === "string"
+        );
+    });
+}
+
+function filteredInitContent(content: string): string {
+    return content.replace("${currentDate}", getCurrentDate());
+}
+
+function getCurrentDate() {
+    const now = new Date();
+    return MONTH_NAMES[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
 }
 
 function toChatGPTMessages(messages: ChatHistoryMessage[]): ChatGPTMessage[] {

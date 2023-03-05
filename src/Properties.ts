@@ -65,6 +65,20 @@ export function getNumberProperty(property: string): number | undefined {
 }
 
 /**
+ * Returns a boolean property.
+ */
+export function getBooleanProperty(property: string): boolean | undefined {
+    const str = getStringProperty(property);
+    if (str === "true") {
+        return true;
+    } else if (str === "false") {
+        return false;
+    } else {
+        return undefined;
+    }
+}
+
+/**
  * Returns an object valued property.
  *
  * @param property property name
