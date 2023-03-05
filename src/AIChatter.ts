@@ -1,23 +1,36 @@
+import { requestChatGPTCompletion } from "./ChatGPT";
 import { ChatError, isChatError, logError } from "./Errors";
-import { checkProperties } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
-import { getHistory } from "./History";
+import { ChatHistoryMessage, getHistory, saveHistory } from "./History";
 
 /**
  * Responds to a received message.
  */
 function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
     try {
-        // Check script properties
-        checkProperties();
-
-        // Store history
+        // Get chat history complemented with the input message
         const history = getHistory(event.message);
-        console.log("history = " + JSON.stringify(history, null, 2));
 
-        const message = "Hello, " + event.user.displayName + "!";
+        // Get ChatGPT completion
+        let completionMessage: ChatHistoryMessage;
+        try {
+            completionMessage = requestChatGPTCompletion(history);
+        } catch (err) {
+            // If something goes wrong then save at least the input message in history
+            saveHistory(history);
+            throw err;
+        }
 
-        return responseMessage(message);
+        // Store ChatGPT answer in history
+        history.messages.push(completionMessage);
+        saveHistory(history);
+
+        // Return completion, unless keeping silent
+        if (completionMessage.text === "") {
+            return undefined;
+        } else {
+            return responseMessage(completionMessage.text);
+        }
     } catch (err) {
         return errorResponse(err);
     }
@@ -28,8 +41,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
  */
 function onAddToSpace(event: GoogleChat.OnSpaceEvent): GoogleChat.BotResponse {
     try {
-        // Check script properties
-        checkProperties();
+        // TODO
     } catch (err) {
         return errorResponse(err);
     }

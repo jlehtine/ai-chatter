@@ -1,11 +1,5 @@
 import { ChatError } from "./Errors";
 
-/** Property keys */
-export enum PropertyKey {
-    OPENAI_API_KEY = "OPENAI_API_KEY",
-    HISTORY_MINUTES = "HISTORY_MINUTES",
-}
-
 /** Cached script properties */
 let scriptProperties: GoogleAppsScript.Properties.Properties;
 
@@ -116,15 +110,5 @@ export function deleteProperty(property: string) {
 export class ScriptConfigurationError extends ChatError {
     constructor(message: string) {
         super(message, "ScriptConfigurationError");
-    }
-}
-
-/**
- * Checks properties and throws an exception if there is a configuration issue.
- */
-export function checkProperties(): void {
-    if (typeof getStringProperty(PropertyKey.OPENAI_API_KEY) !== "string") {
-        const errorMessage = "Mandatory script property missing: " + PropertyKey.OPENAI_API_KEY;
-        throw new ScriptConfigurationError(errorMessage);
     }
 }

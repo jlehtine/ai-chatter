@@ -1,14 +1,7 @@
-import {
-    PropertyKey,
-    getProperties,
-    getNumberProperty,
-    getObjectProperty,
-    setObjectProperty,
-    deleteProperty,
-} from "./Properties";
+import { getProperties, getNumberProperty, getObjectProperty, setObjectProperty, deleteProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 import { MillisSinceEpoch, Millis, millisNow, minutesToMillis, differenceMillis } from "./Timestamp";
-import { logError } from "./Errors";
+import { CausedError, logError } from "./Errors";
 
 const HISTORY_PREFIX = "_history/";
 
@@ -46,11 +39,12 @@ function createChatHistory(message: GoogleChat.Message): ChatHistory {
 
 /**
  * Returns chat history for the specified message, including the new message.
+ * The caller is responsible for saving the history at the end to persist the new message.
  */
 export function getHistory(message: GoogleChat.Message): ChatHistory {
-    // Check if history exists and create a new or add to existing
-    const historyProp = getHistoryPropertyKey(message);
-    const historyObj = getObjectProperty(historyProp);
+    // Check if history exists and add to existing or create a new
+    const historyKey = getHistoryKeyForMessage(message);
+    const historyObj = getObjectProperty(historyKey);
     let history: ChatHistory;
     if (isChatHistory(historyObj)) {
         history = historyObj;
@@ -61,37 +55,49 @@ export function getHistory(message: GoogleChat.Message): ChatHistory {
         history = createChatHistory(message);
     }
 
-    // Save history, pruning it on failure (assuming too long value)
+    return history;
+}
+
+/**
+ * Saves the specified history, trying to prune it on failure (assuming too long value).
+ */
+export function saveHistory(history: ChatHistory) {
+    // Prune expired histories
+    pruneHistories();
+
+    const historyKey = getHistoryKey(history);
     let saved = false;
+    let lastErr;
     while (!saved && history.messages.length > 0) {
         try {
-            setObjectProperty(historyProp, history);
+            setObjectProperty(historyKey, history);
             saved = true;
         } catch (err: unknown) {
             logError(err);
+            lastErr = err;
             history.messages.splice(0, 1);
         }
     }
     if (!saved) {
-        try {
-            deleteProperty(historyProp);
-        } catch (err: unknown) {
-            logError(err);
-        }
+        throw new CausedError("Failed to save chat history", lastErr);
     }
-
-    // Prune expired histories
-    pruneHistories();
-
-    return history;
 }
 
-/** Returns the history property key for a chat message */
-function getHistoryPropertyKey(message: GoogleChat.Message): string {
+/**
+ * Returns the history key for the specified chat message.
+ */
+function getHistoryKeyForMessage(message: GoogleChat.Message): string {
     return (
         HISTORY_PREFIX +
         (message.space.spaceThreadingState === "UNTHREADED_MESSAGES" ? message.space.name : message.thread.name)
     );
+}
+
+/**
+ * Returns the history key for the specified history.
+ */
+function getHistoryKey(history: ChatHistory): string {
+    return HISTORY_PREFIX + (history.thread ?? history.space);
 }
 
 /**
@@ -152,5 +158,5 @@ function pruneHistories(): void {
  * Returns the number of millis that a chat history should be retained.
  */
 function getHistoryMillis(): Millis {
-    return minutesToMillis(getNumberProperty(PropertyKey.HISTORY_MINUTES) ?? 60);
+    return minutesToMillis(getNumberProperty("HISTORY_MINUTES") ?? 60);
 }
