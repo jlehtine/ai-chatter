@@ -4,7 +4,7 @@ import { getStringProperty } from "./Properties";
 
 interface ChatGPTCompletionRequest {
     model: string;
-    messages: Array<ChatGPTMessage>;
+    messages: ChatGPTMessage[];
 }
 
 interface ChatGPTMessage {
@@ -15,7 +15,7 @@ interface ChatGPTMessage {
 interface ChatGPTCompletionResponse {
     object: "chat.completion";
     created: number;
-    choices: Array<ChatGPTCompletionChoice>;
+    choices: ChatGPTCompletionChoice[];
     usage: ChatGPTUsage;
 }
 
@@ -111,7 +111,7 @@ function getModel(): string {
     return getStringProperty("CHATGPT_MODEL") ?? "gpt-3.5-turbo";
 }
 
-function toChatGPTMessages(messages: Array<ChatHistoryMessage>): Array<ChatGPTMessage> {
+function toChatGPTMessages(messages: ChatHistoryMessage[]): ChatGPTMessage[] {
     return messages.map((m) => toChatGPTMessage(m));
 }
 

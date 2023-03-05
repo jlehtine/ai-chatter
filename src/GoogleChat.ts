@@ -42,7 +42,7 @@ export interface ChatTime {
 
 export interface ResponseMessage {
     text?: string;
-    cardsV2?: Array<Card>;
+    cardsV2?: Card[];
     fallbackText?: string;
 }
 
@@ -53,7 +53,7 @@ export interface Card {
 
 export interface CardContent {
     header?: CardHeader;
-    sections?: Array<CardSection>;
+    sections?: CardSection[];
 }
 
 export interface CardHeader {
@@ -63,7 +63,7 @@ export interface CardHeader {
 
 export interface CardSection {
     header: string;
-    widgets: Array<CardWidget>;
+    widgets: CardWidget[];
     collapsible?: boolean;
 }
 

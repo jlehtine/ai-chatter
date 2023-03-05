@@ -9,7 +9,7 @@ export const HISTORY_PREFIX = "_history/";
 export interface ChatHistory {
     space: string;
     thread?: string;
-    messages: Array<ChatHistoryMessage>;
+    messages: ChatHistoryMessage[];
 }
 
 /** One message in a chat history */
