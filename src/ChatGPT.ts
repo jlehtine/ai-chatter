@@ -44,7 +44,7 @@ class ChatGPTCompletionError extends ChatError {
 }
 
 const USER_ASSISTANT = "__ChatGPT__";
-const PROP_OPENAI_API_KEY = "OPENAI_API_KEY";
+export const PROP_OPENAI_API_KEY = "OPENAI_API_KEY";
 
 /**
  * Requests and returns a ChatGPT completion for the specified chat history.

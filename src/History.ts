@@ -3,7 +3,7 @@ import * as GoogleChat from "./GoogleChat";
 import { MillisSinceEpoch, Millis, millisNow, minutesToMillis, differenceMillis } from "./Timestamp";
 import { CausedError, logError } from "./Errors";
 
-const HISTORY_PREFIX = "_history/";
+export const HISTORY_PREFIX = "_history/";
 
 /** History for a chat or a chat thread */
 export interface ChatHistory {
