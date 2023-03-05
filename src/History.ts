@@ -54,6 +54,9 @@ export function getHistory(message: GoogleChat.Message, asIs = false): ChatHisto
         }
     } else {
         history = createChatHistory(message);
+        if (asIs) {
+            history.messages = [];
+        }
     }
 
     return history;
