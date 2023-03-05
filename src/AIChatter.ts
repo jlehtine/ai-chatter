@@ -30,7 +30,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
             // Get ChatGPT completion
             let completionResponse: GoogleChat.BotResponse;
             try {
-                completionResponse = requestChatGPTCompletion(history);
+                completionResponse = requestChatGPTCompletion(history, event.message.sender.name);
             } catch (err) {
                 // If something goes wrong then save at least the input message in history
                 saveHistory(history);

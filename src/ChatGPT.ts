@@ -6,6 +6,7 @@ import * as GoogleChat from "./GoogleChat";
 interface ChatGPTCompletionRequest {
     model: string;
     messages: ChatGPTMessage[];
+    user?: string;
 }
 
 interface ChatGPTMessage {
@@ -79,10 +80,10 @@ const MONTH_NAMES = [
  * Updates the specified history with the ChatGPT response.
  * The caller is responsible for persisting the history.
  */
-export function requestChatGPTCompletion(history: ChatHistory): GoogleChat.BotResponse {
+export function requestChatGPTCompletion(history: ChatHistory, user: string): GoogleChat.BotResponse {
     const url = getChatCompletionsURL();
     const apiKey = getOpenAIAPIKey();
-    const request = createChatGPTCompletionRequest(history);
+    const request = createChatGPTCompletionRequest(history, user);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -145,10 +146,11 @@ export function requestChatGPTCompletion(history: ChatHistory): GoogleChat.BotRe
     }
 }
 
-function createChatGPTCompletionRequest(history: ChatHistory): ChatGPTCompletionRequest {
+function createChatGPTCompletionRequest(history: ChatHistory, user: string): ChatGPTCompletionRequest {
     return {
         model: getModel(),
         messages: toChatGPTMessages(history),
+        user: user,
     };
 }
 

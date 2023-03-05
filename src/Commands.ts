@@ -101,7 +101,7 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
     }
 
     // Request new ChatGPT completion
-    const completionResponse = requestChatGPTCompletion(history);
+    const completionResponse = requestChatGPTCompletion(history, message.sender.name);
 
     // Save history with new response
     saveHistory(history);
