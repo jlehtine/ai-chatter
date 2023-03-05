@@ -9,10 +9,18 @@ export class ChatError extends Error {
     }
 }
 
+/**
+ * Checks and returns whether the specified erorr is a ChatError.
+ */
 export function isChatError(err: any): boolean {
+    // TODO Why instanceof does not work with exceptions in GAS (using any for now)
     return typeof err === "object" && err.chatError === true;
 }
 
+/**
+ * Logs the specified error.
+ */
 export function logError(err: any): void {
+    // TODO Why instanceof does not work with exceptions in GAS (using any for now)
     console.error(err.stack || err.message || err);
 }

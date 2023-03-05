@@ -1,7 +1,5 @@
 import { ChatError } from "./Errors";
 
-const PROPERTY_SAFE_LENGTH = 9000;
-
 /** Property keys */
 export enum PropertyKey {
     OPENAI_API_KEY = "OPENAI_API_KEY",
@@ -13,11 +11,6 @@ let scriptProperties: GoogleAppsScript.Properties.Properties;
 
 /** Cached properties */
 let properties: { [key: string]: string };
-
-/** Default properties */
-const defaultProperties: { [key: string]: string } = {
-    [PropertyKey.HISTORY_MINUTES]: "60",
-};
 
 /**
  * Returns the cached script properties.
@@ -48,12 +41,7 @@ export function getProperties(): { [key: string]: string } {
  * @return property value as a string, or undefined if not set
  */
 export function getStringProperty(property: string): string | undefined {
-    const str = getProperties()[property];
-    if (typeof str === "string") {
-        return str;
-    } else {
-        return defaultProperties[property];
-    }
+    return getProperties()[property];
 }
 
 /**

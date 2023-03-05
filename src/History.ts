@@ -80,7 +80,7 @@ function toHistoryMessage(message: GoogleChat.Message): HistoryMessage {
  * Prunes expired records from the history.
  */
 function pruneHistory(history: ThreadHistory): void {
-    const historyMillis: Millis = minutesToMillis(getNumberProperty(PropertyKey.HISTORY_MINUTES)!);
+    const historyMillis = getHistoryMillis();
     const now: MillisSinceEpoch = millisNow();
     let i;
     for (i = 0; i < history.length; i++) {
@@ -95,7 +95,7 @@ function pruneHistory(history: ThreadHistory): void {
  * Go through all histories and prune expired histories.
  */
 function pruneHistories(): void {
-    const historyMillis: Millis = minutesToMillis(getNumberProperty(PropertyKey.HISTORY_MINUTES)!);
+    const historyMillis = getHistoryMillis();
     const now: MillisSinceEpoch = millisNow();
     const props = getProperties();
     for (const propKey in Object.keys(props)) {
@@ -106,4 +106,11 @@ function pruneHistories(): void {
             }
         }
     }
+}
+
+/**
+ * Returns the number of millis that a chat history should be retained.
+ */
+function getHistoryMillis(): Millis {
+    return minutesToMillis(getNumberProperty(PropertyKey.HISTORY_MINUTES) ?? 60);
 }
