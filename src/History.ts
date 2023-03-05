@@ -36,7 +36,7 @@ function isChatHistory(obj: unknown): obj is ChatHistory {
 /**
  *  Creates a new chat history from a Google Chat message.
  */
-function newChatHistory(message: GoogleChat.Message): ChatHistory {
+function createChatHistory(message: GoogleChat.Message): ChatHistory {
     return {
         space: message.space.name,
         thread: message.space.spaceThreadingState === "UNTHREADED_MESSAGES" ? undefined : message.thread.name,
@@ -58,7 +58,7 @@ export function getHistory(message: GoogleChat.Message): ChatHistory {
         history.messages.push(toChatHistoryMessage(message));
         history.messages.sort((h1, h2) => h1.time - h2.time);
     } else {
-        history = newChatHistory(message);
+        history = createChatHistory(message);
     }
 
     // Save history, pruning it on failure (assuming too long value)
