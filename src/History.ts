@@ -38,10 +38,10 @@ function createChatHistory(message: GoogleChat.Message): ChatHistory {
 }
 
 /**
- * Returns chat history for the specified message, including the new message.
+ * Returns chat history for the specified message, including the new message unless requested as is.
  * The caller is responsible for saving the history at the end to persist the new message.
  */
-export function getHistory(message: GoogleChat.Message): ChatHistory {
+export function getHistory(message: GoogleChat.Message, asIs = false): ChatHistory {
     // Check if history exists and add to existing or create a new
     const historyKey = getHistoryKeyForMessage(message);
     const historyObj = getObjectProperty(historyKey);
@@ -49,8 +49,10 @@ export function getHistory(message: GoogleChat.Message): ChatHistory {
     if (isChatHistory(historyObj)) {
         history = historyObj;
         pruneHistory(history);
-        history.messages.push(toChatHistoryMessage(message));
-        history.messages.sort((h1, h2) => h1.time - h2.time);
+        if (!asIs) {
+            history.messages.push(toChatHistoryMessage(message));
+            history.messages.sort((h1, h2) => h1.time - h2.time);
+        }
     } else {
         history = createChatHistory(message);
     }
@@ -67,19 +69,18 @@ export function saveHistory(history: ChatHistory) {
 
     const historyKey = getHistoryKey(history);
     let saved = false;
-    let lastErr;
-    while (!saved && history.messages.length > 0) {
+    while (!saved) {
         try {
             setObjectProperty(historyKey, history);
             saved = true;
         } catch (err: unknown) {
             logError(err);
-            lastErr = err;
-            history.messages.splice(0, 1);
+            if (history.messages.length > 0) {
+                history.messages.splice(0, 1);
+            } else {
+                throw new CausedError("Failed to save chat history", err);
+            }
         }
-    }
-    if (!saved) {
-        throw new CausedError("Failed to save chat history", lastErr);
     }
 }
 

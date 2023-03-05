@@ -43,7 +43,7 @@ class ChatGPTCompletionError extends ChatError {
     }
 }
 
-const USER_ASSISTANT = "__assistant_user__";
+const USER_ASSISTANT = "__ChatGPT__";
 const PROP_OPENAI_API_KEY = "OPENAI_API_KEY";
 
 /**

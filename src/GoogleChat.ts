@@ -127,6 +127,13 @@ export function toMillisSinceEpoch(time: ChatTime): MillisSinceEpoch {
 }
 
 /**
+ * Returns a simple text response message.
+ */
+export function textResponse(text: string): ResponseMessage {
+    return { text: text };
+}
+
+/**
  * Returns a response that displays a card with decorated text and a header.
  */
 export function decoratedTextResponse(header: string, text: string, formattedHeader?: string): ResponseMessage {

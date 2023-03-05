@@ -36,7 +36,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
         if (completionMessage.text === "") {
             return undefined;
         } else {
-            return responseMessage(completionMessage.text);
+            return GoogleChat.textResponse(completionMessage.text);
         }
     } catch (err) {
         return errorResponse(err);
@@ -59,13 +59,6 @@ function onAddToSpace(event: GoogleChat.OnSpaceEvent): GoogleChat.BotResponse {
  */
 function onRemoveFromSpace(event: GoogleChat.OnSpaceEvent): void {
     // TODO Purge history
-}
-
-/**
- * Returns a chat response with the specified text.
- */
-function responseMessage(text: string): GoogleChat.ResponseMessage {
-    return { text: text };
 }
 
 /**
