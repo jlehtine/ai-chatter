@@ -1,5 +1,6 @@
 const path = require("path");
 const GasPlugin = require("gas-webpack-plugin");
+const ESLintPlugin = require("eslint-webpack-plugin");
 
 module.exports = {
     mode: "production",
@@ -23,5 +24,5 @@ module.exports = {
     optimization: {
         usedExports: "global",
     },
-    plugins: [new GasPlugin()],
+    plugins: [new GasPlugin(), new ESLintPlugin()],
 };
