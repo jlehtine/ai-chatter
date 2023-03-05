@@ -35,7 +35,7 @@ class UnauthorizedError extends CommandError {}
  */
 export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.ResponseMessage | undefined {
     // Check if not a command
-    const text = event.message?.text;
+    const text = event.message?.argumentText;
     if (typeof text !== "string" || !text.trim().startsWith(COMMAND_PREFIX)) {
         return undefined;
     }
@@ -62,7 +62,7 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Re
 
 function checkAdmin(message: GoogleChat.Message): void {
     if (message.space.singleUserBotDm !== true) {
-        throw new CommandError("This command is only available in a direct messaging chat between admin and bot");
+        throw new CommandError("This command is only available in a direct messaging chat between an admin and a bot.");
     }
     const admins = getAdmins();
     if (!admins.includes(message.sender.name)) {
@@ -108,9 +108,7 @@ function commandShow(arg: string | undefined, message: GoogleChat.Message): Goog
     const shown: string[] = [];
     let response = "";
     Object.keys(props)
-        .filter(
-            (k) => k !== PROP_OPENAI_API_KEY && !k.startsWith(HISTORY_PREFIX) && (args.length == 0 || args.includes(k))
-        )
+        .filter((k) => k !== PROP_OPENAI_API_KEY && !k.startsWith("_") && (args.length == 0 || args.includes(k)))
         .sort()
         .forEach((key) => {
             if (response) {

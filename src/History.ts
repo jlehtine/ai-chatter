@@ -108,7 +108,7 @@ function toChatHistoryMessage(message: GoogleChat.Message): ChatHistoryMessage {
     return {
         time: Math.floor(GoogleChat.toMillisSinceEpoch(message.createTime)),
         user: message.sender.displayName,
-        text: message.fallbackText ?? message.text,
+        text: message.argumentText ?? message.text,
     };
 }
 
