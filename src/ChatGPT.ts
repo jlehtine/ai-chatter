@@ -48,8 +48,16 @@ export const USER_ASSISTANT = "__ChatGPT__";
 
 export const PROP_OPENAI_API_KEY = "OPENAI_API_KEY";
 const PROP_CHATGPT_INIT = "CHATGPT_INIT";
+const PROP_CHATGPT_INIT_GROUP = "CHATGPT_INIT_GROUP";
 
 const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [];
+
+const DEFAULT_CHATGPT_INIT_GROUP: ChatGPTMessage[] = [
+    {
+        role: "user",
+        content: "This discussion has several participants. Each input starts with the name of the participant.",
+    },
+];
 
 const MONTH_NAMES = [
     "January",
@@ -140,7 +148,7 @@ export function requestChatGPTCompletion(history: ChatHistory): GoogleChat.BotRe
 function createChatGPTCompletionRequest(history: ChatHistory): ChatGPTCompletionRequest {
     return {
         model: getModel(),
-        messages: getInit().concat(toChatGPTMessages(history.messages)),
+        messages: toChatGPTMessages(history),
     };
 }
 
@@ -165,14 +173,16 @@ function getModel(): string {
     return getStringProperty("CHATGPT_MODEL") ?? "gpt-3.5-turbo";
 }
 
-function getInit(): ChatGPTMessage[] {
-    const init = getObjectProperty(PROP_CHATGPT_INIT) ?? DEFAULT_CHATGPT_INIT;
+function getInit(history: ChatHistory, groupChat: boolean): ChatGPTMessage[] {
+    const initProp = groupChat ? PROP_CHATGPT_INIT_GROUP : PROP_CHATGPT_INIT;
+    const defaultInit = groupChat ? DEFAULT_CHATGPT_INIT_GROUP : DEFAULT_CHATGPT_INIT;
+    const init = getObjectProperty(initProp) ?? defaultInit;
     if (!isValidInit(init)) {
         throw new ChatGPTConfigurationError("Invalid initialization sequence: " + PROP_CHATGPT_INIT);
     }
     return init.map((msg) => ({
         role: msg.role,
-        content: filteredInitContent(msg.content),
+        content: filteredInitContent(msg.content, history),
     }));
 }
 
@@ -189,8 +199,8 @@ function isValidInit(obj: unknown): obj is ChatGPTMessage[] {
     });
 }
 
-function filteredInitContent(content: string): string {
-    return content.replace("${currentDate}", getCurrentDate());
+function filteredInitContent(content: string, history: ChatHistory): string {
+    return content.replace("${currentDate}", getCurrentDate()).replace("${user.firstName}", getUserFirstName(history));
 }
 
 function getCurrentDate() {
@@ -198,14 +208,35 @@ function getCurrentDate() {
     return MONTH_NAMES[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
 }
 
-function toChatGPTMessages(messages: ChatHistoryMessage[]): ChatGPTMessage[] {
-    return messages.map((m) => toChatGPTMessage(m));
+function getUserFirstName(history: ChatHistory) {
+    const messages = history.messages;
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const message = messages[i];
+        if (message.user !== USER_ASSISTANT) {
+            const firstName = getFirstName(message.user.trim());
+            if (firstName) {
+                return firstName;
+            }
+        }
+    }
+    return "an unknown user";
 }
 
-function toChatGPTMessage(message: ChatHistoryMessage): ChatGPTMessage {
+function toChatGPTMessages(history: ChatHistory): ChatGPTMessage[] {
+    const messages = history.messages;
+    const nameMap = getParticipantNameMap(messages);
+    const groupChat = Object.keys(nameMap).length > 1;
+    return getInit(history, groupChat).concat(
+        messages.map((m) => toChatGPTMessage(m, groupChat ? nameMap : undefined))
+    );
+}
+
+function toChatGPTMessage(message: ChatHistoryMessage, nameMap?: { [key: string]: string }): ChatGPTMessage {
+    const name = nameMap ? nameMap[message.user] : undefined;
+    const content = (name ? name + ":\n" : "") + message.text;
     return {
         role: message.user === USER_ASSISTANT ? "assistant" : "user",
-        content: message.text,
+        content: content,
     };
 }
 
@@ -240,4 +271,43 @@ function getShowTokens(): boolean {
 
 function getTokenPrice(): number | void {
     return getNumberProperty("CHATGPT_TOKEN_PRICE");
+}
+
+function getParticipantNameMap(messages: ChatHistoryMessage[]): { [key: string]: string } {
+    const nameMap: { [key: string]: string } = {};
+    const users: string[] = [];
+    messages
+        .filter((m) => m.user !== USER_ASSISTANT && m.user.trim())
+        .map((m) => m.user.trim())
+        .forEach((user) => {
+            if (!users.includes(user)) {
+                users.push(user);
+            }
+        });
+    users.forEach((user) => {
+        const firstName = getFirstName(user);
+        const uniqueFirstName = users.filter((u) => u !== user).every((u) => getFirstName(u) !== firstName);
+        if (uniqueFirstName) {
+            nameMap[user] = firstName;
+        } else {
+            const firstNamePlusInitial = getFirstNamePlusInitial(user);
+            const uniqueFirstNamePlusInitial = users
+                .filter((u) => u !== user)
+                .every((u) => getFirstNamePlusInitial(u) !== firstNamePlusInitial);
+            if (uniqueFirstNamePlusInitial) {
+                nameMap[user] = firstNamePlusInitial;
+            } else {
+                nameMap[user] = user;
+            }
+        }
+    });
+    return nameMap;
+}
+
+function getFirstName(user: string): string {
+    return (user.match(/^\S*/) ?? [""])[0];
+}
+
+function getFirstNamePlusInitial(user: string): string {
+    return (user.match(/^\S*(\s+\S)?/) ?? [""])[0];
 }
