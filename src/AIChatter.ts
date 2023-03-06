@@ -7,8 +7,9 @@ import { getBooleanProperty, getStringProperty } from "./Properties";
 
 const DEFAULT_INTRODUCTION =
     "Hi! I'm a chatbot. \
-I will relay your chat messages to OpenAI chat completion API (ChatGPT) and replay you the generated response. \
+I will relay your chat messages to the OpenAI chat completion API (ChatGPT) and replay you the generated response. \
 You can also generate images with the OpenAI image generation API (DALL·E). \
+I am not in any way endorsed by OpenAI, just using their API. \
 For further help, try `/help`.";
 
 /**
