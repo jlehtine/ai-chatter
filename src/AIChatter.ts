@@ -1,9 +1,15 @@
 import { requestChatGPTCompletion } from "./ChatGPT";
 import { checkForCommand } from "./Commands";
-import { ChatError, isChatError, logError } from "./Errors";
+import { isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
-import { ChatHistoryMessage, getHistory, saveHistory } from "./History";
-import { getBooleanProperty } from "./Properties";
+import { getHistory, saveHistory } from "./History";
+import { getBooleanProperty, getStringProperty } from "./Properties";
+
+const DEFAULT_INTRODUCTION =
+    "Hi! I'm a chatbot. \
+I will relay your chat messages to OpenAI chat completion API (ChatGPT) and replay you the generated response. \
+You can also generate images with the OpenAI image generation API (DALL·E). \
+For further help, try `/help`.";
 
 /**
  * Responds to a received message.
@@ -56,9 +62,9 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
 /**
  * Responds to being added into a space or chat.
  */
-function onAddToSpace(event: GoogleChat.OnSpaceEvent): GoogleChat.BotResponse {
+function onAddToSpace(): GoogleChat.BotResponse {
     try {
-        // TODO
+        return GoogleChat.textResponse(getIntroduction());
     } catch (err) {
         return errorResponse(err);
     }
@@ -90,6 +96,13 @@ function errorResponse(err: unknown): GoogleChat.BotResponse {
  */
 function getLogGoogleChat(): boolean {
     return getBooleanProperty("LOG_GOOGLE_CHAT") ?? false;
+}
+
+/**
+ * Returns the introduction shown when being added to a space.
+ */
+function getIntroduction(): string {
+    return getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION;
 }
 
 // Export required globals
