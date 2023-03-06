@@ -23,7 +23,7 @@ interface ChatCompletionResponse {
 }
 
 /** Chat message */
-interface ChatCompletionMessage {
+export interface ChatCompletionMessage {
     role: "system" | "user" | "assistant";
     content: string;
 }
@@ -41,6 +41,9 @@ interface ChatCompletionTokenUsage {
     completion_tokens: number;
     total_tokens: number;
 }
+
+/** Chat completion initialization sequence */
+export type ChatCompletionInitialization = ChatCompletionMessage[];
 
 function isChatCompletionResponse(obj: unknown): obj is ChatCompletionResponse {
     return (obj as ChatCompletionResponse)?.object === "chat.completion";
@@ -60,10 +63,10 @@ class ChatCompletionError extends ChatError {
 export const USER_ASSISTANT = "__assistant__";
 
 /** Property key for the initialization sequence of a chat */
-const PROP_CHAT_INIT = "CHAT_INIT";
+export const PROP_CHAT_INIT = "CHAT_INIT";
 
 /** Default initialization sequence for a chat */
-const DEFAULT_CHAT_INIT: ChatCompletionMessage[] = [];
+const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
 
 /**
  * Requests and returns a chat completion for the specified chat history.

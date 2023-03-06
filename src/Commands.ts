@@ -1,11 +1,11 @@
-import { requestChatCompletion, USER_ASSISTANT } from "./ChatCompletion";
+import { ChatCompletionInitialization, PROP_CHAT_INIT, requestChatCompletion, USER_ASSISTANT } from "./ChatCompletion";
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
 import { requestImageGeneration } from "./Image";
 import { checkModeration } from "./Moderation";
 import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
-import { deleteProperty, getProperties, getStringProperty, setStringProperty } from "./Properties";
+import { deleteProperty, getProperties, getStringProperty, setObjectProperty, setStringProperty } from "./Properties";
 
 const COMMAND_PREFIX = "/";
 const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/;
@@ -25,6 +25,9 @@ Commands:\n\
   /image [n=N] <prompt>    create an image based on the prompt\n\
   /again                   get another chat completion\n\
   /history [clear]         show or clear chat history\n\
+\n\
+Admin commands:\n\
+  /init [<initialization>] set or clear chat initialization\n\
   /show [<property>...]    show all or specified properties\n\
   /set <property> <value>  set the specified property\n\
 ```";
@@ -65,6 +68,8 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Bo
         return commandAgain(arg, event.message);
     } else if (cmd === "history") {
         return commandHistory(arg, event.message);
+    } else if (cmd === "init") {
+        return commandInit(arg, event.message);
     } else if (cmd === "show") {
         return commandShow(arg, event.message);
     } else if (cmd === "set") {
@@ -160,6 +165,33 @@ function commandHistory(arg: string | undefined, message: GoogleChat.Message): G
         throw new CommandError(INVALID_ARGS_MSG);
     }
     return GoogleChat.textResponse("```\n" + JSON.stringify(history, null, 2).replace("```", "") + "\n```");
+}
+
+/**
+ * Command "/init"
+ */
+function commandInit(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
+    checkAdmin(message);
+
+    // Set initialization sequence
+    if (arg?.trim()) {
+        const initSeq: ChatCompletionInitialization = [
+            {
+                role: "user",
+                content: arg.trim(),
+            },
+        ];
+        setObjectProperty(PROP_CHAT_INIT, initSeq);
+        return GoogleChat.textResponse(
+            "Chat completion initialization sequence:\n```\n" + JSON.stringify(initSeq, null, 2) + "\n```"
+        );
+    }
+
+    // Or clear it
+    else {
+        deleteProperty(PROP_CHAT_INIT);
+        return GoogleChat.textResponse("Chat completion initialization sequence cleared");
+    }
 }
 
 /**
