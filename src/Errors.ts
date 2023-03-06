@@ -15,7 +15,7 @@ export function isCausedError(err: unknown): err is CausedError {
 }
 
 /**
- * An error that has a message which can be returned to the chat.
+ * An error that has a message which can be shown to the chat user as is.
  */
 export class ChatError extends CausedError {
     chatError = true;

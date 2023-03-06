@@ -3,6 +3,7 @@ import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAI";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 
+/** Image generation API request */
 interface ImageGenerationRequest {
     prompt: string;
     n?: number;
@@ -11,13 +12,16 @@ interface ImageGenerationRequest {
     user?: string;
 }
 
+/** Allowed image sizes */
 type ImageSize = "256x256" | "512x512" | "1024x1024";
 
+/** Image generation API response */
 interface ImageGenerationResponse {
     created: number;
     data: ImageGenerationResult[];
 }
 
+/** Image generation result for a single image */
 interface ImageGenerationResult {
     url: string;
 }
@@ -33,6 +37,10 @@ class ImageGenerationError extends ChatError {
     }
 }
 
+/**
+ * Requests image generation for the specified prompt and the number of images.
+ * Returns the resulting images as a chat response.
+ */
 export function requestImageGeneration(prompt: string, user: string, n = 1): GoogleChat.ResponseMessage {
     const url = getImageGenerationUrl();
     const apiKey = getOpenAIAPIKey();
@@ -90,10 +98,17 @@ function createImageGenerationRequest(prompt: string, user: string, n: number): 
     };
 }
 
+/**
+ * Returns whether image generation requests and responses should be logged.
+ */
 function getLogImage(): boolean {
     return getBooleanProperty("LOG_IMAGE") ?? false;
 }
 
+/**
+ * Parses the specified HTTP response into an image generation response.
+ * Throws an error if the response does not indicate success.
+ */
 function toImageGenerationResponse(httpResponse: GoogleAppsScript.URL_Fetch.HTTPResponse): ImageGenerationResponse {
     if (!isOkResponse(httpResponse)) {
         throw new ImageGenerationError(
@@ -116,5 +131,6 @@ function toImageGenerationResponse(httpResponse: GoogleAppsScript.URL_Fetch.HTTP
 }
 
 function isOkResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): boolean {
-    return response.getResponseCode() === 200;
+    const code = response.getResponseCode();
+    return code >= 200 && code < 300;
 }

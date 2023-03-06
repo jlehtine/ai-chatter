@@ -4,17 +4,16 @@ import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProp
 import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAI";
 
+// Chat completion API interface
+
+/** Chat completion request */
 interface ChatGPTCompletionRequest {
     model: string;
     messages: ChatGPTMessage[];
     user?: string;
 }
 
-interface ChatGPTMessage {
-    role: "system" | "user" | "assistant";
-    content: string;
-}
-
+/** Chat completion response */
 interface ChatGPTCompletionResponse {
     object: "chat.completion";
     created: number;
@@ -22,35 +21,50 @@ interface ChatGPTCompletionResponse {
     usage: ChatGPTUsage;
 }
 
-function isChatGPTCompletionResponse(obj: unknown): obj is ChatGPTCompletionResponse {
-    return (obj as ChatGPTCompletionResponse)?.object === "chat.completion";
+/** Chat message */
+interface ChatGPTMessage {
+    role: "system" | "user" | "assistant";
+    content: string;
 }
 
+/** Chat completion choice (a single result) */
 interface ChatGPTCompletionChoice {
     index: number;
     message: ChatGPTMessage;
     finish_reason: string;
 }
 
+/** Chat completion token usage */
 interface ChatGPTUsage {
     prompt_tokens: number;
     completion_tokens: number;
     total_tokens: number;
 }
 
+function isChatGPTCompletionResponse(obj: unknown): obj is ChatGPTCompletionResponse {
+    return (obj as ChatGPTCompletionResponse)?.object === "chat.completion";
+}
+
+/** Signals a configuration error */
 class ChatGPTConfigurationError extends Error {}
 
+/** Signals a chat completion error */
 class ChatGPTCompletionError extends ChatError {
     constructor(message: string, cause: unknown = undefined) {
         super(message, "ChatGPTCompletionError", cause);
     }
 }
 
+/** User name used for the assistant in chat history */
 export const USER_ASSISTANT = "__ChatGPT__";
 
+/** Property key for the initialization sequence of a one-to-one chat */
 const PROP_CHATGPT_INIT = "CHATGPT_INIT";
+
+/** Property key for the initialization sequence of a group chat */
 const PROP_CHATGPT_INIT_GROUP = "CHATGPT_INIT_GROUP";
 
+/** Default initialization sequence for a one-to-one chat */
 const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [
     {
         role: "user",
@@ -58,6 +72,7 @@ const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [
     },
 ];
 
+/** Default initialization sequence for a group chat */
 const DEFAULT_CHATGPT_INIT_GROUP: ChatGPTMessage[] = [
     {
         role: "user",
@@ -81,14 +96,17 @@ const MONTH_NAMES = [
 
 /**
  * Requests and returns a ChatGPT completion for the specified chat history.
- * Returns null if ChatGPT remains silent.
  * Updates the specified history with the ChatGPT response.
  * The caller is responsible for persisting the history.
  */
-export function requestChatGPTCompletion(history: ChatHistory, user: string): GoogleChat.BotResponse {
+export function requestChatGPTCompletion(
+    history: ChatHistory,
+    oneToOne: boolean,
+    user: string
+): GoogleChat.ResponseMessage {
     const url = getChatCompletionsURL();
     const apiKey = getOpenAIAPIKey();
-    const request = createChatGPTCompletionRequest(history, user);
+    const request = createChatGPTCompletionRequest(history, oneToOne, user);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -129,32 +147,35 @@ export function requestChatGPTCompletion(history: ChatHistory, user: string): Go
 
     // Format response
     const showTokens = getShowTokens();
-    if (responseMessage.text || showTokens) {
-        const chatResponse = GoogleChat.textResponse(responseMessage.text);
-        if (showTokens) {
-            let tokenUsage =
-                "Prompt tokens: " +
-                response.usage.prompt_tokens +
-                "\nCompletion tokens: " +
-                response.usage.completion_tokens +
-                "\nTotal tokens: " +
-                response.usage.total_tokens;
-            const tokenPrice = getTokenPrice();
-            if (typeof tokenPrice === "number") {
-                tokenUsage += "\nTotal cost: $" + tokenPrice * response.usage.total_tokens;
-            }
-            GoogleChat.addDecoratedTextCard(chatResponse, "tokens", "Token usage", tokenUsage);
+    const chatResponse = GoogleChat.textResponse(responseMessage.text);
+    if (showTokens) {
+        let tokenUsage =
+            "Prompt tokens: " +
+            response.usage.prompt_tokens +
+            "\nCompletion tokens: " +
+            response.usage.completion_tokens +
+            "\nTotal tokens: " +
+            response.usage.total_tokens;
+        const tokenPrice = getTokenPrice();
+        if (typeof tokenPrice === "number") {
+            tokenUsage += "\nTotal cost: $" + tokenPrice * response.usage.total_tokens;
         }
-        return chatResponse;
-    } else {
-        return undefined;
+        GoogleChat.addDecoratedTextCard(chatResponse, "tokens", "Token usage", tokenUsage);
     }
+    return chatResponse;
 }
 
-function createChatGPTCompletionRequest(history: ChatHistory, user: string): ChatGPTCompletionRequest {
+/**
+ * Creates a chat completion request from the specified chat history.
+ */
+function createChatGPTCompletionRequest(
+    history: ChatHistory,
+    oneToOne: boolean,
+    user: string
+): ChatGPTCompletionRequest {
     return {
         model: getModel(),
-        messages: toChatGPTMessages(history),
+        messages: toChatGPTMessages(history, oneToOne),
         user: user,
     };
 }
@@ -163,20 +184,25 @@ function getChatCompletionsURL(): string {
     return getStringProperty("CHATGPT_COMPLETIONS_URL") ?? "https://api.openai.com/v1/chat/completions";
 }
 
+/** Returns whether chat completion requests and responses should be logged */
 function getLogChatGPT(): boolean {
     return getBooleanProperty("LOG_CHATGPT") ?? false;
 }
 
+/** Returns the chat completion model to be used */
 function getModel(): string {
     return getStringProperty("CHATGPT_MODEL") ?? "gpt-3.5-turbo";
 }
 
-function getInit(history: ChatHistory, groupChat: boolean): ChatGPTMessage[] {
-    const initProp = groupChat ? PROP_CHATGPT_INIT_GROUP : PROP_CHATGPT_INIT;
-    const defaultInit = groupChat ? DEFAULT_CHATGPT_INIT_GROUP : DEFAULT_CHATGPT_INIT;
+/**
+ * Returns the initialization sequence for a chat.
+ */
+function getInit(history: ChatHistory, oneToOne: boolean): ChatGPTMessage[] {
+    const initProp = oneToOne ? PROP_CHATGPT_INIT : PROP_CHATGPT_INIT_GROUP;
+    const defaultInit = oneToOne ? DEFAULT_CHATGPT_INIT : DEFAULT_CHATGPT_INIT_GROUP;
     const init = getObjectProperty(initProp) ?? defaultInit;
     if (!isValidInit(init)) {
-        throw new ChatGPTConfigurationError("Invalid initialization sequence: " + PROP_CHATGPT_INIT);
+        throw new ChatGPTConfigurationError("Invalid initialization sequence: " + initProp);
     }
     return init.map((msg) => ({
         role: msg.role,
@@ -184,6 +210,9 @@ function getInit(history: ChatHistory, groupChat: boolean): ChatGPTMessage[] {
     }));
 }
 
+/**
+ * Returns whether the specified object represents a valid chat initialization sequence.
+ */
 function isValidInit(obj: unknown): obj is ChatGPTMessage[] {
     if (!Array.isArray(obj)) {
         return false;
@@ -197,15 +226,24 @@ function isValidInit(obj: unknown): obj is ChatGPTMessage[] {
     });
 }
 
+/**
+ * Filters the content of initialization sequence messages, filling in the variables.
+ */
 function filteredInitContent(content: string, history: ChatHistory): string {
     return content.replace("${currentDate}", getCurrentDate()).replace("${user.firstName}", getUserFirstName(history));
 }
 
-function getCurrentDate() {
+/**
+ * Returns the current date as a string for initialization sequence.
+ */
+function getCurrentDate(): string {
     const now = new Date();
     return MONTH_NAMES[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
 }
 
+/**
+ * Returns the first name of the user for a one-to-one chat, based on the specified history.
+ */
 function getUserFirstName(history: ChatHistory) {
     const messages = history.messages;
     for (let i = messages.length - 1; i >= 0; i--) {
@@ -220,15 +258,18 @@ function getUserFirstName(history: ChatHistory) {
     return "an unknown user";
 }
 
-function toChatGPTMessages(history: ChatHistory): ChatGPTMessage[] {
+/**
+ * Converts a chat history into an array of chat messages suitable for a completion request.
+ */
+function toChatGPTMessages(history: ChatHistory, oneToOne: boolean): ChatGPTMessage[] {
     const messages = history.messages;
     const nameMap = getParticipantNameMap(messages);
-    const groupChat = Object.keys(nameMap).length > 1;
-    return getInit(history, groupChat).concat(
-        messages.map((m) => toChatGPTMessage(m, groupChat ? nameMap : undefined))
-    );
+    return getInit(history, oneToOne).concat(messages.map((m) => toChatGPTMessage(m, oneToOne ? undefined : nameMap)));
 }
 
+/**
+ * Converts an individual chat history message into a chat message suitable for a completion request.
+ */
 function toChatGPTMessage(message: ChatHistoryMessage, nameMap?: { [key: string]: string }): ChatGPTMessage {
     const name = nameMap ? nameMap[message.user] : undefined;
     const content = (name ? name + ":\n" : "") + message.text;
@@ -238,6 +279,10 @@ function toChatGPTMessage(message: ChatHistoryMessage, nameMap?: { [key: string]
     };
 }
 
+/**
+ * Parses the specified HTTP response into a chat completion response.
+ * Throws an error if the response does not indicate success.
+ */
 function toChatGPTCompletionResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): ChatGPTCompletionResponse {
     if (!isOkResponse(response)) {
         throw new ChatGPTCompletionError(
@@ -260,17 +305,28 @@ function toChatGPTCompletionResponse(response: GoogleAppsScript.URL_Fetch.HTTPRe
 }
 
 function isOkResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): boolean {
-    return response.getResponseCode() === 200;
+    const code = response.getResponseCode();
+    return code >= 200 && code < 300;
 }
 
+/**
+ * Returns whether to show token usage to the user as part of the response.
+ */
 function getShowTokens(): boolean {
     return getBooleanProperty("SHOW_TOKENS") ?? false;
 }
 
+/**
+ * Returns the per-token price in dollars, if configured.
+ */
 function getTokenPrice(): number | void {
     return getNumberProperty("CHATGPT_TOKEN_PRICE");
 }
 
+/**
+ * Returns an object mapping chat participant display names to a shortened names
+ * relayed to the chat completion service.
+ */
 function getParticipantNameMap(messages: ChatHistoryMessage[]): { [key: string]: string } {
     const nameMap: { [key: string]: string } = {};
     const users: string[] = [];
@@ -302,10 +358,10 @@ function getParticipantNameMap(messages: ChatHistoryMessage[]): { [key: string]:
     return nameMap;
 }
 
-function getFirstName(user: string): string {
-    return (user.match(/^\S*/) ?? [""])[0];
+function getFirstName(displayName: string): string {
+    return (displayName.match(/^\S*/) ?? [""])[0];
 }
 
-function getFirstNamePlusInitial(user: string): string {
-    return (user.match(/^\S*(\s+\S)?/) ?? [""])[0];
+function getFirstNamePlusInitial(displayName: string): string {
+    return (displayName.match(/^\S*(\s+\S)?/) ?? [""])[0];
 }
