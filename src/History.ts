@@ -87,6 +87,19 @@ export function saveHistory(history: ChatHistory) {
 }
 
 /**
+ * Removes the histories associated with the specified space.
+ */
+export function removeHistoriesForSpace(space: GoogleChat.Space): void {
+    const spaceHistoryKey = HISTORY_PREFIX + space.name;
+    const props = getProperties();
+    Object.keys(props).forEach((propKey) => {
+        if (propKey === spaceHistoryKey || propKey.startsWith(spaceHistoryKey + "/")) {
+            deleteProperty(propKey);
+        }
+    });
+}
+
+/**
  * Returns the history key for the specified chat message.
  */
 function getHistoryKeyForMessage(message: GoogleChat.Message): string {

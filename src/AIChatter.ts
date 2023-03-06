@@ -2,7 +2,7 @@ import { requestChatGPTCompletion } from "./ChatGPT";
 import { checkForCommand } from "./Commands";
 import { isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
-import { getHistory, saveHistory } from "./History";
+import { getHistory, removeHistoriesForSpace, saveHistory } from "./History";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 
 const DEFAULT_INTRODUCTION =
@@ -74,7 +74,8 @@ function onAddToSpace(): GoogleChat.BotResponse {
  * Responds to being removed from a space or chat.
  */
 function onRemoveFromSpace(event: GoogleChat.OnSpaceEvent): void {
-    // TODO Purge history
+    // Remove histories associated with the space
+    removeHistoriesForSpace(event.space);
 }
 
 /**
