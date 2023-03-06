@@ -6,6 +6,7 @@ import { requestImageGeneration } from "./Image";
 import { checkModeration } from "./Moderation";
 import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
 import { deleteProperty, getProperties, getStringProperty, setObjectProperty, setStringProperty } from "./Properties";
+import { millisNow } from "./Timestamp";
 
 const COMMAND_PREFIX = "/";
 const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/;
@@ -23,7 +24,7 @@ Usage:\n\
 Commands:\n\
   /help                    show this help text\n\
   /image [n=N] <prompt>    create an image based on the prompt\n\
-  /again                   get another chat completion\n\
+  /again                   regenerate the last chat response or image\n\
   /history [clear]         show or clear chat history\n\
 \n\
 Admin commands:\n\
@@ -121,8 +122,19 @@ function commandImage(arg: string | undefined, message: GoogleChat.Message): Goo
     if (match) {
         const nStr = match[1];
         const prompt = match[2]?.trim();
-        if (prompt) {
+        if (arg && prompt) {
+            // Moderation check on prompt
             checkModeration(prompt);
+
+            // Store latest image command for repeat
+            const history = getHistory(message, true);
+            history.imageCommand = {
+                time: millisNow(),
+                arg: arg,
+            };
+            saveHistory(history);
+
+            // Image generation
             return requestImageGeneration(prompt, message.sender.name, nStr ? Number(nStr) : undefined);
         }
     }
@@ -138,8 +150,15 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
         throw new CommandError(INVALID_ARGS_MSG);
     }
 
-    // Get history without last reponse, if it was from the bot
+    // Get history as is
     const history = getHistory(message, true);
+
+    // Check if last command was an image
+    if (history.imageCommand) {
+        return commandImage(history.imageCommand.arg, message);
+    }
+
+    // Otherwise remove the last message from history, if it was an assistant response
     if (history.messages.length > 0 && history.messages[history.messages.length - 1].user === USER_ASSISTANT) {
         history.messages.splice(history.messages.length - 1, 1);
     }

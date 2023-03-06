@@ -10,6 +10,7 @@ export interface ChatHistory {
     space: string;
     thread?: string;
     messages: ChatHistoryMessage[];
+    imageCommand?: ChatHistoryImageCommand;
 }
 
 /** One message in a chat history */
@@ -17,6 +18,11 @@ export interface ChatHistoryMessage {
     time: MillisSinceEpoch;
     user: string;
     text: string;
+}
+
+export interface ChatHistoryImageCommand {
+    time: MillisSinceEpoch;
+    arg: string;
 }
 
 function isChatHistory(obj: unknown): obj is ChatHistory {
@@ -51,6 +57,7 @@ export function getHistory(message: GoogleChat.Message, asIs = false): ChatHisto
         pruneHistory(history);
         if (!asIs) {
             history.messages.push(toChatHistoryMessage(message));
+            delete history.imageCommand;
         }
     } else {
         history = createChatHistory(message);
@@ -121,7 +128,7 @@ function getHistoryKey(history: ChatHistory): string {
  */
 function toChatHistoryMessage(message: GoogleChat.Message): ChatHistoryMessage {
     return {
-        time: Math.floor(GoogleChat.toMillisSinceEpoch(message.createTime)),
+        time: millisNow(),
         user: message.sender.displayName,
         text: message.argumentText ?? message.text,
     };
@@ -156,8 +163,9 @@ function pruneHistories(): void {
             if (isChatHistory(history)) {
                 const messages = history.messages;
                 if (
-                    messages.length === 0 ||
-                    differenceMillis(now, messages[messages.length - 1].time) > historyMillis
+                    (messages.length === 0 ||
+                        differenceMillis(now, messages[messages.length - 1].time) > historyMillis) &&
+                    (!history.imageCommand || differenceMillis(now, history.imageCommand.time) > historyMillis)
                 ) {
                     // Delete an expired history
                     deleteProperty(propKey);

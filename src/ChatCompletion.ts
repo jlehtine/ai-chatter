@@ -4,6 +4,7 @@ import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProp
 import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
 import { checkModeration } from "./Moderation";
+import { millisNow } from "./Timestamp";
 
 // Chat completion API interface
 
@@ -105,7 +106,7 @@ export function requestChatCompletion(history: ChatHistory, user: string): Googl
                 throw new Error("No completion content available");
             }
             responseMessage = {
-                time: response.created * 1000,
+                time: millisNow(),
                 user: USER_ASSISTANT,
                 text: response.choices[0].message.content.trim(),
             };
