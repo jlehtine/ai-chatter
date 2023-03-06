@@ -51,7 +51,12 @@ export const USER_ASSISTANT = "__ChatGPT__";
 const PROP_CHATGPT_INIT = "CHATGPT_INIT";
 const PROP_CHATGPT_INIT_GROUP = "CHATGPT_INIT_GROUP";
 
-const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [];
+const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [
+    {
+        role: "user",
+        content: "My name is ${user.firstName}.",
+    },
+];
 
 const DEFAULT_CHATGPT_INIT_GROUP: ChatGPTMessage[] = [
     {
