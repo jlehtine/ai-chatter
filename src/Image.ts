@@ -1,5 +1,6 @@
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
+import { checkModeration } from "./Moderation";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 
@@ -42,6 +43,7 @@ class ImageGenerationError extends ChatError {
  * Returns the resulting images as a chat response.
  */
 export function requestImageGeneration(prompt: string, user: string, n = 1): GoogleChat.ResponseMessage {
+    // Prepare image generation request
     if (n !== Math.round(n) || n < 1 || n > 10) {
         throw new ImageGenerationError("Option n must be an integer from 1 to 10");
     }
@@ -60,6 +62,8 @@ export function requestImageGeneration(prompt: string, user: string, n = 1): Goo
     if (getLogImage()) {
         console.log("Image generation request:\n" + JSON.stringify(request, null, 2));
     }
+
+    // Make image generation request and parse response
     let response: ImageGenerationResponse;
     try {
         const httpResponse = UrlFetchApp.fetch(url, params);
@@ -71,7 +75,7 @@ export function requestImageGeneration(prompt: string, user: string, n = 1): Goo
         throw new ImageGenerationError("Error while doing image generation", err);
     }
 
-    // Format response
+    // Format results
     const chatResponse = GoogleChat.decoratedTextResponse("images", "Generated images", '"' + prompt + '"');
     const cardsV2 = chatResponse.cardsV2;
     const sections = cardsV2 ? cardsV2[0].card.sections : undefined;

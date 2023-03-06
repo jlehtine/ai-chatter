@@ -3,6 +3,7 @@ import { ChatHistory, ChatHistoryMessage } from "./History";
 import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
+import { checkModeration } from "./Moderation";
 
 // Chat completion API interface
 
@@ -70,7 +71,8 @@ const DEFAULT_CHAT_INIT: ChatCompletionMessage[] = [];
  * The caller is responsible for persisting the history.
  */
 export function requestChatCompletion(history: ChatHistory, user: string): GoogleChat.ResponseMessage {
-    const url = getChatCompletionsURL();
+    // Prepare chat completion request
+    const url = getChatCompletionURL();
     const apiKey = getOpenAIAPIKey();
     const request = createChatCompletionRequest(history, user);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
@@ -85,6 +87,8 @@ export function requestChatCompletion(history: ChatHistory, user: string): Googl
     if (getLogChatCompletion()) {
         console.log("Chat completion request:\n" + JSON.stringify(request, null, 2));
     }
+
+    // Make chat completion request and parse response
     let response: ChatCompletionResponse;
     let responseMessage: ChatHistoryMessage;
     try {
@@ -111,7 +115,10 @@ export function requestChatCompletion(history: ChatHistory, user: string): Googl
         throw new ChatCompletionError("Error while performing chat completion", err);
     }
 
-    // Format response
+    // Moderate output
+    checkModeration(responseMessage.text);
+
+    // Format completion result
     const showTokens = getShowTokens();
     const chatResponse = GoogleChat.textResponse(responseMessage.text);
     if (showTokens) {
@@ -142,8 +149,8 @@ function createChatCompletionRequest(history: ChatHistory, user: string): ChatCo
     };
 }
 
-function getChatCompletionsURL(): string {
-    return getStringProperty("CHAT_COMPLETIONS_URL") ?? "https://api.openai.com/v1/chat/completions";
+function getChatCompletionURL(): string {
+    return getStringProperty("CHAT_COMPLETION_URL") ?? "https://api.openai.com/v1/chat/completions";
 }
 
 /** Returns whether chat completion requests and responses should be logged */

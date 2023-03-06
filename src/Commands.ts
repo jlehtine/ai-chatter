@@ -3,6 +3,7 @@ import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
 import { requestImageGeneration } from "./Image";
+import { checkModeration } from "./Moderation";
 import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
 import { deleteProperty, getProperties, getStringProperty, setStringProperty } from "./Properties";
 
@@ -116,7 +117,8 @@ function commandImage(arg: string | undefined, message: GoogleChat.Message): Goo
         const nStr = match[1];
         const prompt = match[2]?.trim();
         if (prompt) {
-            return requestImageGeneration(prompt.trim(), message.sender.name, nStr ? Number(nStr) : undefined);
+            checkModeration(prompt);
+            return requestImageGeneration(prompt, message.sender.name, nStr ? Number(nStr) : undefined);
         }
     }
     throw new CommandError(INVALID_ARGS_MSG);

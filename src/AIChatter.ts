@@ -3,6 +3,7 @@ import { checkForCommand } from "./Commands";
 import { isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, removeHistoriesForSpace, saveHistory } from "./History";
+import { checkModeration } from "./Moderation";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 
 const DEFAULT_INTRODUCTION =
@@ -31,6 +32,9 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
 
         // Otherwise delegate to chat completion API
         else {
+            // Moderate input
+            checkModeration(event.message.text);
+
             // Get chat history complemented with the input message
             const history = getHistory(event.message);
 
