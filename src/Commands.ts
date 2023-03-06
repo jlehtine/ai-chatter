@@ -14,7 +14,10 @@ const HELP_TEXT =
 \n\
 ```\n\
 Usage:\n\
+  <chat message in a one-to-one chat>\n\
+  @<bot name> <chat message in a space>\n\
   /command [arguments...]\n\
+  @<bot name> /command [arguments...]\n\
 \n\
 Commands:\n\
   /help                    show this help text\n\
