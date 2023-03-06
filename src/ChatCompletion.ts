@@ -58,55 +58,21 @@ class ChatCompletionError extends ChatError {
 /** User name used for the assistant in chat history */
 export const USER_ASSISTANT = "__assistant__";
 
-/** Property key for the initialization sequence of a one-to-one chat */
+/** Property key for the initialization sequence of a chat */
 const PROP_CHAT_INIT = "CHAT_INIT";
 
-/** Property key for the initialization sequence of a group chat */
-const PROP_CHAT_INIT_GROUP = "CHAT_INIT_GROUP";
-
-/** Default initialization sequence for a one-to-one chat */
-const DEFAULT_CHAT_INIT: ChatCompletionMessage[] = [
-    {
-        role: "user",
-        content: "My name is ${user.firstName}.",
-    },
-];
-
-/** Default initialization sequence for a group chat */
-const DEFAULT_CHAT_INIT_GROUP: ChatCompletionMessage[] = [
-    {
-        role: "user",
-        content: "This discussion has several participants. Each input starts with the name of the participant.",
-    },
-];
-
-const MONTH_NAMES = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "November",
-    "December",
-];
+/** Default initialization sequence for a chat */
+const DEFAULT_CHAT_INIT: ChatCompletionMessage[] = [];
 
 /**
  * Requests and returns a chat completion for the specified chat history.
  * Updates the specified history with the chat completion response.
  * The caller is responsible for persisting the history.
  */
-export function requestChatCompletion(
-    history: ChatHistory,
-    oneToOne: boolean,
-    user: string
-): GoogleChat.ResponseMessage {
+export function requestChatCompletion(history: ChatHistory, user: string): GoogleChat.ResponseMessage {
     const url = getChatCompletionsURL();
     const apiKey = getOpenAIAPIKey();
-    const request = createChatCompletionRequest(history, oneToOne, user);
+    const request = createChatCompletionRequest(history, user);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -168,10 +134,10 @@ export function requestChatCompletion(
 /**
  * Creates a chat completion request from the specified chat history.
  */
-function createChatCompletionRequest(history: ChatHistory, oneToOne: boolean, user: string): ChatCompletionRequest {
+function createChatCompletionRequest(history: ChatHistory, user: string): ChatCompletionRequest {
     return {
         model: getModel(),
-        messages: toChatCompletionMessages(history, oneToOne),
+        messages: toChatCompletionMessages(history),
         user: user,
     };
 }
@@ -193,17 +159,12 @@ function getModel(): string {
 /**
  * Returns the initialization sequence for a chat.
  */
-function getInit(history: ChatHistory, oneToOne: boolean): ChatCompletionMessage[] {
-    const initProp = oneToOne ? PROP_CHAT_INIT : PROP_CHAT_INIT_GROUP;
-    const defaultInit = oneToOne ? DEFAULT_CHAT_INIT : DEFAULT_CHAT_INIT_GROUP;
-    const init = getObjectProperty(initProp) ?? defaultInit;
+function getInit(): ChatCompletionMessage[] {
+    const init = getObjectProperty(PROP_CHAT_INIT) ?? DEFAULT_CHAT_INIT;
     if (!isValidInit(init)) {
-        throw new ChatCompletionConfigurationError("Invalid initialization sequence: " + initProp);
+        throw new ChatCompletionConfigurationError("Invalid initialization sequence: " + PROP_CHAT_INIT);
     }
-    return init.map((msg) => ({
-        role: msg.role,
-        content: filteredInitContent(msg.content, history),
-    }));
+    return init;
 }
 
 /**
@@ -223,60 +184,20 @@ function isValidInit(obj: unknown): obj is ChatCompletionMessage[] {
 }
 
 /**
- * Filters the content of initialization sequence messages, filling in the variables.
- */
-function filteredInitContent(content: string, history: ChatHistory): string {
-    return content.replace("${currentDate}", getCurrentDate()).replace("${user.firstName}", getUserFirstName(history));
-}
-
-/**
- * Returns the current date as a string for initialization sequence.
- */
-function getCurrentDate(): string {
-    const now = new Date();
-    return MONTH_NAMES[now.getMonth()] + " " + now.getDate() + ", " + now.getFullYear();
-}
-
-/**
- * Returns the first name of the user for a one-to-one chat, based on the specified history.
- */
-function getUserFirstName(history: ChatHistory) {
-    const messages = history.messages;
-    for (let i = messages.length - 1; i >= 0; i--) {
-        const message = messages[i];
-        if (message.user !== USER_ASSISTANT) {
-            const firstName = getFirstName(message.user.trim());
-            if (firstName) {
-                return firstName;
-            }
-        }
-    }
-    return "an unknown user";
-}
-
-/**
  * Converts a chat history into an array of chat messages suitable for a completion request.
  */
-function toChatCompletionMessages(history: ChatHistory, oneToOne: boolean): ChatCompletionMessage[] {
+function toChatCompletionMessages(history: ChatHistory): ChatCompletionMessage[] {
     const messages = history.messages;
-    const nameMap = getParticipantNameMap(messages);
-    return getInit(history, oneToOne).concat(
-        messages.map((m) => toChatCompletionMessage(m, oneToOne ? undefined : nameMap))
-    );
+    return getInit().concat(messages.map((m) => toChatCompletionMessage(m)));
 }
 
 /**
  * Converts an individual chat history message into a chat message suitable for a completion request.
  */
-function toChatCompletionMessage(
-    message: ChatHistoryMessage,
-    nameMap?: { [key: string]: string }
-): ChatCompletionMessage {
-    const name = nameMap ? nameMap[message.user] : undefined;
-    const content = (name ? name + ":\n" : "") + message.text;
+function toChatCompletionMessage(message: ChatHistoryMessage): ChatCompletionMessage {
     return {
         role: message.user === USER_ASSISTANT ? "assistant" : "user",
-        content: content,
+        content: message.text,
     };
 }
 
@@ -322,47 +243,4 @@ function getShowTokens(): boolean {
  */
 function getChatCompletionTokenPrice(): number | void {
     return getNumberProperty("CHAT_COMPLETION_TOKEN_PRICE");
-}
-
-/**
- * Returns an object mapping chat participant display names to a shortened names
- * relayed to the chat completion service.
- */
-function getParticipantNameMap(messages: ChatHistoryMessage[]): { [key: string]: string } {
-    const nameMap: { [key: string]: string } = {};
-    const users: string[] = [];
-    messages
-        .filter((m) => m.user !== USER_ASSISTANT && m.user.trim())
-        .map((m) => m.user.trim())
-        .forEach((user) => {
-            if (!users.includes(user)) {
-                users.push(user);
-            }
-        });
-    users.forEach((user) => {
-        const firstName = getFirstName(user);
-        const uniqueFirstName = users.filter((u) => u !== user).every((u) => getFirstName(u) !== firstName);
-        if (uniqueFirstName) {
-            nameMap[user] = firstName;
-        } else {
-            const firstNamePlusInitial = getFirstNamePlusInitial(user);
-            const uniqueFirstNamePlusInitial = users
-                .filter((u) => u !== user)
-                .every((u) => getFirstNamePlusInitial(u) !== firstNamePlusInitial);
-            if (uniqueFirstNamePlusInitial) {
-                nameMap[user] = firstNamePlusInitial;
-            } else {
-                nameMap[user] = user;
-            }
-        }
-    });
-    return nameMap;
-}
-
-function getFirstName(displayName: string): string {
-    return (displayName.match(/^\S*/) ?? [""])[0];
-}
-
-function getFirstNamePlusInitial(displayName: string): string {
-    return (displayName.match(/^\S*(\s+\S)?/) ?? [""])[0];
 }

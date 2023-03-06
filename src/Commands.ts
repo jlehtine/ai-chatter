@@ -138,7 +138,7 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
     }
 
     // Request new chat completion
-    const completionResponse = requestChatCompletion(history, message.space.singleUserBotDm, message.sender.name);
+    const completionResponse = requestChatCompletion(history, message.sender.name);
 
     // Save history with new response
     saveHistory(history);

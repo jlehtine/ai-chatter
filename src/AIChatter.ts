@@ -37,11 +37,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
             // Get chat completion
             let completionResponse: GoogleChat.BotResponse;
             try {
-                completionResponse = requestChatCompletion(
-                    history,
-                    event.message.space.singleUserBotDm,
-                    event.message.sender.name
-                );
+                completionResponse = requestChatCompletion(history, event.message.sender.name);
             } catch (err) {
                 // If something goes wrong then save at least the input message in history
                 saveHistory(history);
