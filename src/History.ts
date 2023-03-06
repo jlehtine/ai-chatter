@@ -137,7 +137,7 @@ function pruneHistories(): void {
     const historyMillis = getHistoryMillis();
     const now: MillisSinceEpoch = millisNow();
     const props = getProperties();
-    for (const propKey in Object.keys(props)) {
+    Object.keys(props).forEach((propKey) => {
         if (propKey.startsWith(HISTORY_PREFIX)) {
             const history = JSON.parse(props[propKey]);
             if (isChatHistory(history)) {
@@ -154,7 +154,7 @@ function pruneHistories(): void {
                 deleteProperty(propKey);
             }
         }
-    }
+    });
 }
 
 /**
