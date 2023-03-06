@@ -164,7 +164,14 @@ function commandHistory(arg: string | undefined, message: GoogleChat.Message): G
     } else if (typeof arg !== "undefined") {
         throw new CommandError(INVALID_ARGS_MSG);
     }
-    return GoogleChat.textResponse("```\n" + JSON.stringify(history, null, 2).replace("```", "") + "\n```");
+    return GoogleChat.textResponse(
+        history.messages.length === 0
+            ? "Chat history is empty"
+            : "*Chat history:*" +
+                  history.messages.map(
+                      (m) => "\n\n_" + (m.user === USER_ASSISTANT ? "Assistant" : m.user) + ":_\n" + m.text
+                  )
+    );
 }
 
 /**
