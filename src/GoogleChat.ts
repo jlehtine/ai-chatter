@@ -67,10 +67,14 @@ export interface CardSection {
     collapsible?: boolean;
 }
 
-export type CardWidget = TextParagraphWidget | DecoratedTextWidget | DividerWidget;
+export type CardWidget = TextParagraphWidget | ImageWidget | DecoratedTextWidget | DividerWidget;
 
 export interface TextParagraphWidget {
     textParagraph: TextParagraph;
+}
+
+export interface ImageWidget {
+    image: Image;
 }
 
 export interface DecoratedTextWidget {
@@ -83,6 +87,11 @@ export interface DividerWidget {
 
 export interface TextParagraph {
     text: string;
+}
+
+export interface Image {
+    imageUrl: string;
+    altText?: string;
 }
 
 export interface DecoratedText {

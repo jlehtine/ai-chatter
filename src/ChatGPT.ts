@@ -2,6 +2,7 @@ import { ChatError } from "./Errors";
 import { ChatHistory, ChatHistoryMessage } from "./History";
 import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
+import { getOpenAIAPIKey } from "./OpenAI";
 
 interface ChatGPTCompletionRequest {
     model: string;
@@ -47,7 +48,6 @@ class ChatGPTCompletionError extends ChatError {
 
 export const USER_ASSISTANT = "__ChatGPT__";
 
-export const PROP_OPENAI_API_KEY = "OPENAI_API_KEY";
 const PROP_CHATGPT_INIT = "CHATGPT_INIT";
 const PROP_CHATGPT_INIT_GROUP = "CHATGPT_INIT_GROUP";
 
@@ -156,15 +156,6 @@ function createChatGPTCompletionRequest(history: ChatHistory, user: string): Cha
 
 function getChatCompletionsURL(): string {
     return getStringProperty("CHATGPT_COMPLETIONS_URL") ?? "https://api.openai.com/v1/chat/completions";
-}
-
-function getOpenAIAPIKey(): string {
-    const apiKey = getStringProperty(PROP_OPENAI_API_KEY);
-    if (apiKey) {
-        return apiKey;
-    } else {
-        throw new ChatGPTConfigurationError("Missing mandatory script property: " + PROP_OPENAI_API_KEY);
-    }
 }
 
 function getLogChatGPT(): boolean {

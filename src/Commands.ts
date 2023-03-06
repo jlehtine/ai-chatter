@@ -1,7 +1,9 @@
-import { PROP_OPENAI_API_KEY, requestChatGPTCompletion, USER_ASSISTANT } from "./ChatGPT";
+import { requestChatGPTCompletion, USER_ASSISTANT } from "./ChatGPT";
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
+import { requestImageGeneration } from "./Image";
+import { PROP_OPENAI_API_KEY } from "./OpenAI";
 import { deleteProperty, getProperties, getStringProperty, setStringProperty } from "./Properties";
 
 const COMMAND_PREFIX = "/";
@@ -16,7 +18,8 @@ Usage:\n\
 \n\
 Commands:\n\
   /help                    show this help text\n\
-  /again                   get another completion\n\
+  /image [n=N] <prompt>    create an image based on the prompt\n\
+  /again                   get another chat completion\n\
   /history [clear]         show or clear chat history\n\
   /show [<property>...]    show all or specified properties\n\
   /set <property> <value>  set the specified property\n\
@@ -52,6 +55,8 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Bo
     const arg = match[2];
     if (cmd === "help") {
         return commandHelp();
+    } else if (cmd === "image") {
+        return commandImage(arg, event.message);
     } else if (cmd === "again") {
         return commandAgain(arg, event.message);
     } else if (cmd === "history") {
@@ -86,6 +91,18 @@ function getAdmins(): string[] {
 
 function commandHelp(): GoogleChat.ResponseMessage {
     return GoogleChat.textResponse(HELP_TEXT);
+}
+
+function commandImage(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
+    const match = arg ? arg.match(/^(?:n=([1-9][0-9]*)\s+)?(.*$)/) : undefined;
+    if (match) {
+        const nStr = match[1];
+        const prompt = match[2]?.trim();
+        if (prompt) {
+            return requestImageGeneration(prompt.trim(), message.sender.name, nStr ? Number(nStr) : undefined);
+        }
+    }
+    throw new CommandError(INVALID_ARGS_MSG);
 }
 
 function commandAgain(arg: string | undefined, message: GoogleChat.Message): GoogleChat.BotResponse {
