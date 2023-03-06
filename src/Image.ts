@@ -42,6 +42,9 @@ class ImageGenerationError extends ChatError {
  * Returns the resulting images as a chat response.
  */
 export function requestImageGeneration(prompt: string, user: string, n = 1): GoogleChat.ResponseMessage {
+    if (n !== Math.round(n) || n < 1 || n > 10) {
+        throw new ImageGenerationError("Option n must be an integer from 1 to 10");
+    }
     const url = getImageGenerationUrl();
     const apiKey = getOpenAIAPIKey();
     const request = createImageGenerationRequest(prompt, user, n);

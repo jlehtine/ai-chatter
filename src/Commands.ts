@@ -111,7 +111,7 @@ function commandHelp(): GoogleChat.ResponseMessage {
  * Command "/image"
  */
 function commandImage(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
-    const match = arg ? arg.match(/^(?:n=([1-9][0-9]*)\s+)?(.*$)/) : undefined;
+    const match = arg ? arg.match(/^(?:n=([0-9]+)\s+)?(.*$)/) : undefined;
     if (match) {
         const nStr = match[1];
         const prompt = match[2]?.trim();
