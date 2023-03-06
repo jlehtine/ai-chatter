@@ -1,4 +1,4 @@
-import { requestChatGPTCompletion } from "./ChatGPT";
+import { requestChatCompletion } from "./ChatCompletion";
 import { checkForCommand } from "./Commands";
 import { isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
@@ -29,15 +29,15 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
             response = commandResponse;
         }
 
-        // Otherwise delegate to ChatGPT
+        // Otherwise delegate to chat completion API
         else {
             // Get chat history complemented with the input message
             const history = getHistory(event.message);
 
-            // Get ChatGPT completion
+            // Get chat completion
             let completionResponse: GoogleChat.BotResponse;
             try {
-                completionResponse = requestChatGPTCompletion(
+                completionResponse = requestChatCompletion(
                     history,
                     event.message.space.singleUserBotDm,
                     event.message.sender.name
@@ -48,7 +48,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
                 throw err;
             }
 
-            // Store ChatGPT answer in history
+            // Store chat completion result in history
             saveHistory(history);
 
             // Return completion, unless keeping silent

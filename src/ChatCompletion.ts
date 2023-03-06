@@ -2,70 +2,70 @@ import { ChatError } from "./Errors";
 import { ChatHistory, ChatHistoryMessage } from "./History";
 import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
-import { getOpenAIAPIKey } from "./OpenAI";
+import { getOpenAIAPIKey } from "./OpenAIAPI";
 
 // Chat completion API interface
 
 /** Chat completion request */
-interface ChatGPTCompletionRequest {
+interface ChatCompletionRequest {
     model: string;
-    messages: ChatGPTMessage[];
+    messages: ChatCompletionMessage[];
     user?: string;
 }
 
 /** Chat completion response */
-interface ChatGPTCompletionResponse {
+interface ChatCompletionResponse {
     object: "chat.completion";
     created: number;
-    choices: ChatGPTCompletionChoice[];
-    usage: ChatGPTUsage;
+    choices: ChatCompletionChoice[];
+    usage: ChatCompletionTokenUsage;
 }
 
 /** Chat message */
-interface ChatGPTMessage {
+interface ChatCompletionMessage {
     role: "system" | "user" | "assistant";
     content: string;
 }
 
 /** Chat completion choice (a single result) */
-interface ChatGPTCompletionChoice {
+interface ChatCompletionChoice {
     index: number;
-    message: ChatGPTMessage;
+    message: ChatCompletionMessage;
     finish_reason: string;
 }
 
 /** Chat completion token usage */
-interface ChatGPTUsage {
+interface ChatCompletionTokenUsage {
     prompt_tokens: number;
     completion_tokens: number;
     total_tokens: number;
 }
 
-function isChatGPTCompletionResponse(obj: unknown): obj is ChatGPTCompletionResponse {
-    return (obj as ChatGPTCompletionResponse)?.object === "chat.completion";
+function isChatCompletionResponse(obj: unknown): obj is ChatCompletionResponse {
+    return (obj as ChatCompletionResponse)?.object === "chat.completion";
 }
 
 /** Signals a configuration error */
-class ChatGPTConfigurationError extends Error {}
+class ChatCompletionConfigurationError extends Error {}
 
 /** Signals a chat completion error */
-class ChatGPTCompletionError extends ChatError {
+class ChatCompletionError extends ChatError {
     constructor(message: string, cause: unknown = undefined) {
-        super(message, "ChatGPTCompletionError", cause);
+        super(message, "ChatCompletionError", cause);
     }
 }
 
 /** User name used for the assistant in chat history */
-export const USER_ASSISTANT = "__ChatGPT__";
+export const USER_ASSISTANT = "__assistant__";
 
 /** Property key for the initialization sequence of a one-to-one chat */
-const PROP_CHATGPT_INIT = "CHATGPT_INIT";
+const PROP_CHAT_INIT = "CHAT_INIT";
 
 /** Property key for the initialization sequence of a group chat */
-const PROP_CHATGPT_INIT_GROUP = "CHATGPT_INIT_GROUP";
+const PROP_CHAT_INIT_GROUP = "CHAT_INIT_GROUP";
 
 /** Default initialization sequence for a one-to-one chat */
-const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [
+const DEFAULT_CHAT_INIT: ChatCompletionMessage[] = [
     {
         role: "user",
         content: "My name is ${user.firstName}.",
@@ -73,7 +73,7 @@ const DEFAULT_CHATGPT_INIT: ChatGPTMessage[] = [
 ];
 
 /** Default initialization sequence for a group chat */
-const DEFAULT_CHATGPT_INIT_GROUP: ChatGPTMessage[] = [
+const DEFAULT_CHAT_INIT_GROUP: ChatCompletionMessage[] = [
     {
         role: "user",
         content: "This discussion has several participants. Each input starts with the name of the participant.",
@@ -95,18 +95,18 @@ const MONTH_NAMES = [
 ];
 
 /**
- * Requests and returns a ChatGPT completion for the specified chat history.
- * Updates the specified history with the ChatGPT response.
+ * Requests and returns a chat completion for the specified chat history.
+ * Updates the specified history with the chat completion response.
  * The caller is responsible for persisting the history.
  */
-export function requestChatGPTCompletion(
+export function requestChatCompletion(
     history: ChatHistory,
     oneToOne: boolean,
     user: string
 ): GoogleChat.ResponseMessage {
     const url = getChatCompletionsURL();
     const apiKey = getOpenAIAPIKey();
-    const request = createChatGPTCompletionRequest(history, oneToOne, user);
+    const request = createChatCompletionRequest(history, oneToOne, user);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -116,16 +116,16 @@ export function requestChatGPTCompletion(
         contentType: "application/json",
         payload: JSON.stringify(request),
     };
-    if (getLogChatGPT()) {
-        console.log("ChatGPT request:\n" + JSON.stringify(request, null, 2));
+    if (getLogChatCompletion()) {
+        console.log("Chat completion request:\n" + JSON.stringify(request, null, 2));
     }
-    let response: ChatGPTCompletionResponse;
+    let response: ChatCompletionResponse;
     let responseMessage: ChatHistoryMessage;
     try {
         const httpResponse = UrlFetchApp.fetch(url, params);
-        response = toChatGPTCompletionResponse(httpResponse);
-        if (getLogChatGPT()) {
-            console.log("ChatGPT response:\n" + JSON.stringify(response, null, 2));
+        response = toChatCompletionResponse(httpResponse);
+        if (getLogChatCompletion()) {
+            console.log("Chat completion response:\n" + JSON.stringify(response, null, 2));
         }
         try {
             if ((response.choices?.length ?? 0) < 1 || typeof response.choices[0].message?.content !== "string") {
@@ -138,11 +138,11 @@ export function requestChatGPTCompletion(
             };
             history.messages.push(responseMessage);
         } catch (err) {
-            console.log("ChatGPT completion response was:\n" + JSON.stringify(response, null, 2));
+            console.log("Chat completion response was:\n" + JSON.stringify(response, null, 2));
             throw err;
         }
     } catch (err) {
-        throw new ChatGPTCompletionError("Error while performing a ChatGPT completion", err);
+        throw new ChatCompletionError("Error while performing chat completion", err);
     }
 
     // Format response
@@ -156,7 +156,7 @@ export function requestChatGPTCompletion(
             response.usage.completion_tokens +
             "\nTotal tokens: " +
             response.usage.total_tokens;
-        const tokenPrice = getTokenPrice();
+        const tokenPrice = getChatCompletionTokenPrice();
         if (typeof tokenPrice === "number") {
             tokenUsage += "\nTotal cost: $" + tokenPrice * response.usage.total_tokens;
         }
@@ -168,41 +168,37 @@ export function requestChatGPTCompletion(
 /**
  * Creates a chat completion request from the specified chat history.
  */
-function createChatGPTCompletionRequest(
-    history: ChatHistory,
-    oneToOne: boolean,
-    user: string
-): ChatGPTCompletionRequest {
+function createChatCompletionRequest(history: ChatHistory, oneToOne: boolean, user: string): ChatCompletionRequest {
     return {
         model: getModel(),
-        messages: toChatGPTMessages(history, oneToOne),
+        messages: toChatCompletionMessages(history, oneToOne),
         user: user,
     };
 }
 
 function getChatCompletionsURL(): string {
-    return getStringProperty("CHATGPT_COMPLETIONS_URL") ?? "https://api.openai.com/v1/chat/completions";
+    return getStringProperty("CHAT_COMPLETIONS_URL") ?? "https://api.openai.com/v1/chat/completions";
 }
 
 /** Returns whether chat completion requests and responses should be logged */
-function getLogChatGPT(): boolean {
-    return getBooleanProperty("LOG_CHATGPT") ?? false;
+function getLogChatCompletion(): boolean {
+    return getBooleanProperty("LOG_CHAT_COMPLETION") ?? false;
 }
 
 /** Returns the chat completion model to be used */
 function getModel(): string {
-    return getStringProperty("CHATGPT_MODEL") ?? "gpt-3.5-turbo";
+    return getStringProperty("CHAT_COMPLETION_MODEL") ?? "gpt-3.5-turbo";
 }
 
 /**
  * Returns the initialization sequence for a chat.
  */
-function getInit(history: ChatHistory, oneToOne: boolean): ChatGPTMessage[] {
-    const initProp = oneToOne ? PROP_CHATGPT_INIT : PROP_CHATGPT_INIT_GROUP;
-    const defaultInit = oneToOne ? DEFAULT_CHATGPT_INIT : DEFAULT_CHATGPT_INIT_GROUP;
+function getInit(history: ChatHistory, oneToOne: boolean): ChatCompletionMessage[] {
+    const initProp = oneToOne ? PROP_CHAT_INIT : PROP_CHAT_INIT_GROUP;
+    const defaultInit = oneToOne ? DEFAULT_CHAT_INIT : DEFAULT_CHAT_INIT_GROUP;
     const init = getObjectProperty(initProp) ?? defaultInit;
     if (!isValidInit(init)) {
-        throw new ChatGPTConfigurationError("Invalid initialization sequence: " + initProp);
+        throw new ChatCompletionConfigurationError("Invalid initialization sequence: " + initProp);
     }
     return init.map((msg) => ({
         role: msg.role,
@@ -213,12 +209,12 @@ function getInit(history: ChatHistory, oneToOne: boolean): ChatGPTMessage[] {
 /**
  * Returns whether the specified object represents a valid chat initialization sequence.
  */
-function isValidInit(obj: unknown): obj is ChatGPTMessage[] {
+function isValidInit(obj: unknown): obj is ChatCompletionMessage[] {
     if (!Array.isArray(obj)) {
         return false;
     }
     return obj.every((member) => {
-        const msg = member as ChatGPTMessage;
+        const msg = member as ChatCompletionMessage;
         return (
             (msg?.role === "system" || msg?.role === "user" || msg?.role === "assistant") &&
             typeof msg?.content === "string"
@@ -261,16 +257,21 @@ function getUserFirstName(history: ChatHistory) {
 /**
  * Converts a chat history into an array of chat messages suitable for a completion request.
  */
-function toChatGPTMessages(history: ChatHistory, oneToOne: boolean): ChatGPTMessage[] {
+function toChatCompletionMessages(history: ChatHistory, oneToOne: boolean): ChatCompletionMessage[] {
     const messages = history.messages;
     const nameMap = getParticipantNameMap(messages);
-    return getInit(history, oneToOne).concat(messages.map((m) => toChatGPTMessage(m, oneToOne ? undefined : nameMap)));
+    return getInit(history, oneToOne).concat(
+        messages.map((m) => toChatCompletionMessage(m, oneToOne ? undefined : nameMap))
+    );
 }
 
 /**
  * Converts an individual chat history message into a chat message suitable for a completion request.
  */
-function toChatGPTMessage(message: ChatHistoryMessage, nameMap?: { [key: string]: string }): ChatGPTMessage {
+function toChatCompletionMessage(
+    message: ChatHistoryMessage,
+    nameMap?: { [key: string]: string }
+): ChatCompletionMessage {
     const name = nameMap ? nameMap[message.user] : undefined;
     const content = (name ? name + ":\n" : "") + message.text;
     return {
@@ -283,23 +284,23 @@ function toChatGPTMessage(message: ChatHistoryMessage, nameMap?: { [key: string]
  * Parses the specified HTTP response into a chat completion response.
  * Throws an error if the response does not indicate success.
  */
-function toChatGPTCompletionResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): ChatGPTCompletionResponse {
+function toChatCompletionResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): ChatCompletionResponse {
     if (!isOkResponse(response)) {
-        throw new ChatGPTCompletionError(
-            "Received an error response from ChatGPT",
+        throw new ChatCompletionError(
+            "Received an error response from the chat completion API",
             "HTTP response code " + response.getResponseCode()
         );
     }
     const responseData = response.getContentText();
     try {
         const data = JSON.parse(responseData);
-        if (isChatGPTCompletionResponse(data)) {
+        if (isChatCompletionResponse(data)) {
             return data;
         } else {
             throw new Error("Response is not a chat completion object");
         }
     } catch (err) {
-        console.log("ChatGPT completion response was:\n" + responseData);
+        console.log("Chat completion response was:\n" + responseData);
         throw err;
     }
 }
@@ -317,10 +318,10 @@ function getShowTokens(): boolean {
 }
 
 /**
- * Returns the per-token price in dollars, if configured.
+ * Returns the chat completion per-token price in dollars, if configured.
  */
-function getTokenPrice(): number | void {
-    return getNumberProperty("CHATGPT_TOKEN_PRICE");
+function getChatCompletionTokenPrice(): number | void {
+    return getNumberProperty("CHAT_COMPLETION_TOKEN_PRICE");
 }
 
 /**

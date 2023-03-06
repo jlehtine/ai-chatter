@@ -1,9 +1,9 @@
-import { requestChatGPTCompletion, USER_ASSISTANT } from "./ChatGPT";
+import { requestChatCompletion, USER_ASSISTANT } from "./ChatCompletion";
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
 import { requestImageGeneration } from "./Image";
-import { PROP_OPENAI_API_KEY } from "./OpenAI";
+import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
 import { deleteProperty, getProperties, getStringProperty, setStringProperty } from "./Properties";
 
 const COMMAND_PREFIX = "/";
@@ -137,8 +137,8 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
         history.messages.splice(history.messages.length - 1, 1);
     }
 
-    // Request new ChatGPT completion
-    const completionResponse = requestChatGPTCompletion(history, message.space.singleUserBotDm, message.sender.name);
+    // Request new chat completion
+    const completionResponse = requestChatCompletion(history, message.space.singleUserBotDm, message.sender.name);
 
     // Save history with new response
     saveHistory(history);

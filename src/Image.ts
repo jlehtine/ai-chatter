@@ -1,6 +1,6 @@
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
-import { getOpenAIAPIKey } from "./OpenAI";
+import { getOpenAIAPIKey } from "./OpenAIAPI";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 
 /** Image generation API request */
@@ -112,7 +112,7 @@ function getLogImage(): boolean {
 function toImageGenerationResponse(httpResponse: GoogleAppsScript.URL_Fetch.HTTPResponse): ImageGenerationResponse {
     if (!isOkResponse(httpResponse)) {
         throw new ImageGenerationError(
-            "Received an error response from ChatGPT",
+            "Received an error response from the image generation API",
             "HTTP response code " + httpResponse.getResponseCode()
         );
     }
