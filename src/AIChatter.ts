@@ -90,7 +90,12 @@ function errorResponse(err: unknown): GoogleChat.BotResponse {
     } else {
         errorMessage = "Something went wrong...";
     }
-    return GoogleChat.decoratedTextResponse("ERROR", errorMessage, '<font color="#ff0000"><b>ERROR<b/></font>');
+    return GoogleChat.decoratedTextResponse(
+        "error",
+        "ERROR",
+        errorMessage,
+        '<font color="#ff0000"><b>ERROR<b/></font>'
+    );
 }
 
 /**

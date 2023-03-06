@@ -151,7 +151,9 @@ export function decoratedTextResponse(
     text: string,
     formattedHeader?: string
 ): ResponseMessage {
-    const message: ResponseMessage = {};
+    const message: ResponseMessage = {
+        fallbackText: header + ": " + text,
+    };
     addDecoratedTextCard(message, cardId, header, text, formattedHeader);
     return message;
 }
