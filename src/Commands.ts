@@ -1,3 +1,4 @@
+import { getChatbotName } from "./AIChatter";
 import { ChatCompletionInitialization, PROP_CHAT_INIT, requestChatCompletion, USER_ASSISTANT } from "./ChatCompletion";
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
@@ -15,11 +16,13 @@ const HELP_TEXT =
     "*Usage instructions*\n\
 \n\
 ```\n\
-Usage:\n\
-  <chat message in a one-to-one chat>\n\
-  @<bot name> <chat message in a space>\n\
+Usage in a one-to-one chat:\n\
+  <chat message>\n\
   /command [arguments...]\n\
-  @<bot name> /command [arguments...]\n\
+\n\
+Usage in a group space:\n\
+  @<chatbot name> <chat message>\n\
+  @<chatbot name> /command [arguments...]\n\
 \n\
 Commands:\n\
   /help                    show this help text\n\
@@ -27,7 +30,7 @@ Commands:\n\
   /again                   regenerate the last chat response or image\n\
   /history [clear]         show or clear chat history\n\
 \n\
-Admin commands:\n\
+Admin commands (only available to admins in a one-to-one chat):\n\
   /init [<initialization>] set or clear chat initialization\n\
   /show [<property>...]    show all or specified properties\n\
   /set <property> <value>  set the specified property\n\
@@ -111,7 +114,7 @@ function getAdmins(): string[] {
  * Command "/help"
  */
 function commandHelp(): GoogleChat.ResponseMessage {
-    return GoogleChat.textResponse(HELP_TEXT);
+    return GoogleChat.textResponse(HELP_TEXT.replaceAll("<chatbot name>", getChatbotName()));
 }
 
 /**

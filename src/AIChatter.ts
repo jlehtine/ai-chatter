@@ -11,7 +11,7 @@ const DEFAULT_INTRODUCTION =
 I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. \
 You can also generate images with the OpenAI image generation model DALL·E.\n\n\
 I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n\
-For further help, try `/help`.\n\n\
+For further help, try `/help` or `@<chatbot name> /help`.\n\n\
 Now let me ask ChatGPT to introduce itself and DALL·E...";
 
 const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
@@ -139,7 +139,7 @@ function getLogGoogleChat(): boolean {
  * Returns the introduction shown when being added to a space.
  */
 function getIntroduction(): string {
-    return getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION;
+    return (getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION).replaceAll("<chatbot name>", getChatbotName());
 }
 
 /**
@@ -148,6 +148,14 @@ function getIntroduction(): string {
  */
 function getIntroductionPrompt(): string {
     return getStringProperty("INTRODUCTION_PROMPT") ?? DEFAULT_INTRODUCTION_PROMPT;
+}
+
+/**
+ * Returns the chatbot name for help texts, if configured.
+ * Otherwise just returns "<chatbot name>".
+ */
+export function getChatbotName(): string {
+    return getStringProperty("CHATBOT_NAME") ?? "<chatbot name>";
 }
 
 // Export required globals

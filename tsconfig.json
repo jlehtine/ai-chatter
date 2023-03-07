@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
         "outDir": "appsscript",
-        "target": "es5",
+        "target": "es6",
+        "lib": ["es2021"],
         "module": "es6",
         "moduleResolution": "node",
         "removeComments": true,
