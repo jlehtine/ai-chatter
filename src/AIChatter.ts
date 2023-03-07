@@ -1,4 +1,4 @@
-import { requestChatCompletion } from "./ChatCompletion";
+import { requestChatCompletion, requestSimpleCompletion } from "./ChatCompletion";
 import { checkForCommand } from "./Commands";
 import { isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
@@ -8,10 +8,13 @@ import { getBooleanProperty, getStringProperty } from "./Properties";
 
 const DEFAULT_INTRODUCTION =
     "Hi! I'm a chatbot. \
-I will relay your chat messages to the OpenAI chat completion API (ChatGPT) and replay you the generated response. \
-You can also generate images with the OpenAI image generation API (DALL·E). \
-I am not in any way endorsed by OpenAI, just using their API. \
-For further help, try `/help`.";
+I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. \
+You can also generate images with the OpenAI image generation model DALL·E.\n\n\
+I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n\
+For further help, try `/help`.\n\n\
+Now let me ask ChatGPT to introduce itself and DALL·E...";
+
+const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
 
 /**
  * Responds to a received message.
@@ -41,7 +44,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
             // Get chat completion
             let completionResponse: GoogleChat.BotResponse;
             try {
-                completionResponse = requestChatCompletion(history, event.message.sender.name);
+                completionResponse = requestChatCompletion(history.messages, event.message.sender.name);
             } catch (err) {
                 // If something goes wrong then save at least the input message in history
                 saveHistory(history);
@@ -69,7 +72,30 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
  */
 function onAddToSpace(): GoogleChat.BotResponse {
     try {
-        return GoogleChat.textResponse(getIntroduction());
+        // Create the static response
+        const introduction = getIntroduction();
+        const response = GoogleChat.textResponse(introduction);
+
+        // Ask chat completion to complement the request, ignore failures
+        try {
+            const prompt = getIntroductionPrompt();
+            if (prompt && prompt !== "none") {
+                checkModeration(prompt);
+                const completionResponse = requestSimpleCompletion(prompt, undefined, true);
+                if (completionResponse.text) {
+                    GoogleChat.addDecoratedTextCard(
+                        response,
+                        "completion",
+                        "Introduction of ChatGPT and DALL·E by ChatGPT:",
+                        completionResponse.text
+                    );
+                }
+            }
+        } catch (err) {
+            logError(err);
+        }
+
+        return response;
     } catch (err) {
         return errorResponse(err);
     }
@@ -114,6 +140,14 @@ function getLogGoogleChat(): boolean {
  */
 function getIntroduction(): string {
     return getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION;
+}
+
+/**
+ * Returns the introduction prompt provided to the chat completion to obtain a self provided introduction.
+ * Use an empty value or "none" to disable.
+ */
+function getIntroductionPrompt(): string {
+    return getStringProperty("INTRODUCTION_PROMPT") ?? DEFAULT_INTRODUCTION_PROMPT;
 }
 
 // Export required globals

@@ -18,6 +18,7 @@ export interface OnMessageEvent {
 
 export interface OnSpaceEvent {
     space: Space;
+    user: User;
 }
 
 export interface CommonEventObject {

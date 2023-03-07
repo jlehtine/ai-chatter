@@ -70,15 +70,34 @@ export const PROP_CHAT_INIT = "CHAT_INIT";
 const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
 
 /**
- * Requests and returns a chat completion for the specified chat history.
- * Updates the specified history with the chat completion response.
- * The caller is responsible for persisting the history.
+ * Requests a simple completion for the specified prompt.
+ *
+ * @param prompt prompt for completion
+ * @param user user identification
+ * @param skipInit whether to skip the chat initialization sequence (default is false)
  */
-export function requestChatCompletion(history: ChatHistory, user: string): GoogleChat.ResponseMessage {
+export function requestSimpleCompletion(prompt: string, user?: string, skipInit = false): GoogleChat.ResponseMessage {
+    return requestChatCompletion([{ time: millisNow(), user: "User", text: prompt }], user, skipInit);
+}
+
+/**
+ * Requests and returns a chat completion for the specified chat message history.
+ * Updates the specified message sequence with the chat completion response.
+ * The caller is responsible for persisting the history.
+ *
+ * @param messages chat messages to complement
+ * @param user user identification
+ * @param skipInit whether to skip the chat initialization sequence (default is false)
+ */
+export function requestChatCompletion(
+    messages: ChatHistoryMessage[],
+    user?: string,
+    skipInit = false
+): GoogleChat.ResponseMessage {
     // Prepare chat completion request
     const url = getChatCompletionURL();
     const apiKey = getOpenAIAPIKey();
-    const request = createChatCompletionRequest(history, user);
+    const request = createChatCompletionRequest(messages, user, skipInit);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -110,7 +129,7 @@ export function requestChatCompletion(history: ChatHistory, user: string): Googl
                 user: USER_ASSISTANT,
                 text: response.choices[0].message.content.trim(),
             };
-            history.messages.push(responseMessage);
+            messages.push(responseMessage);
         } catch (err) {
             console.log("Chat completion response was:\n" + JSON.stringify(response, null, 2));
             throw err;
@@ -145,10 +164,14 @@ export function requestChatCompletion(history: ChatHistory, user: string): Googl
 /**
  * Creates a chat completion request from the specified chat history.
  */
-function createChatCompletionRequest(history: ChatHistory, user: string): ChatCompletionRequest {
+function createChatCompletionRequest(
+    messages: ChatHistoryMessage[],
+    user: string | undefined,
+    skipInit: boolean
+): ChatCompletionRequest {
     return {
         model: getModel(),
-        messages: toChatCompletionMessages(history),
+        messages: toChatCompletionMessages(messages, skipInit),
         user: user,
     };
 }
@@ -197,9 +220,8 @@ function isValidInit(obj: unknown): obj is ChatCompletionMessage[] {
 /**
  * Converts a chat history into an array of chat messages suitable for a completion request.
  */
-function toChatCompletionMessages(history: ChatHistory): ChatCompletionMessage[] {
-    const messages = history.messages;
-    return getInit().concat(messages.map((m) => toChatCompletionMessage(m)));
+function toChatCompletionMessages(messages: ChatHistoryMessage[], skipInit: boolean): ChatCompletionMessage[] {
+    return (skipInit ? [] : getInit()).concat(messages.map((m) => toChatCompletionMessage(m)));
 }
 
 /**
