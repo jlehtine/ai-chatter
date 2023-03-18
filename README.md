@@ -1,8 +1,9 @@
 # AI Chatter
 
 AI Chatter is a proof-of-concept project for creating a simple Google Chat app
-using the [OpenAI](https://openai.com/) chat completion API and image generation
-API using just Google Apps Script without any additional cloud services.
+which uses the [OpenAI](https://openai.com/) chat completion API and image
+generation API and runs on Google Apps Script without any additional cloud
+services.
 
 ## Build
 
@@ -93,7 +94,7 @@ The next step is to publish a test version of the chat app for ourselves to try.
    yourself. You may wish to enable logs. Finally click _Save_, reload the page
    and you should see App status _LIVE_.
 
-Now we can verify that the chatbot is visible.
+Now we can verify that the chat app is visible.
 
 1. Open Google Chat using the same account as you used for the Apps Script
    project and as the test user.
