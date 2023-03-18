@@ -1,6 +1,5 @@
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
-import { checkModeration } from "./Moderation";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 

@@ -1,5 +1,5 @@
 import { ChatError } from "./Errors";
-import { ChatHistory, ChatHistoryMessage } from "./History";
+import { ChatHistoryMessage } from "./History";
 import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAIAPI";

@@ -1,0 +1,1 @@
+{ "name": "ai-chatter", "dependencies": { "@types/google-apps-script": { "version": "1.0.58" } } }
