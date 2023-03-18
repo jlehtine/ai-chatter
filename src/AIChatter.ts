@@ -7,12 +7,12 @@ import { checkModeration } from "./Moderation";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 
 const DEFAULT_INTRODUCTION =
-    "Hi! I'm a chatbot. \
-I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. \
-You can also generate images with the OpenAI image generation model DALL·E.\n\n\
-I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n\
-For further help, try `/help` or `@<chatbot name> /help`.\n\n\
-Now let me ask ChatGPT to introduce itself and DALL·E...";
+    "Hi! I'm a chatbot. " +
+    "I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. " +
+    "You can also generate images with the OpenAI image generation model DALL·E.\n\n" +
+    "I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n" +
+    "For further help, try `/help` or `@<chatbot name> /help`.\n\n" +
+    "Now let me ask ChatGPT to introduce itself and DALL·E...";
 
 const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
 

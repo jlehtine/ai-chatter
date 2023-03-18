@@ -13,28 +13,28 @@ const COMMAND_PREFIX = "/";
 const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/;
 
 const HELP_TEXT =
-    "*Usage instructions*\n\
-\n\
-```\n\
-Usage in a one-to-one chat:\n\
-  <chat message>\n\
-  /command [arguments...]\n\
-\n\
-Usage in a group space:\n\
-  @<chatbot name> <chat message>\n\
-  @<chatbot name> /command [arguments...]\n\
-\n\
-Commands:\n\
-  /help                    show this help text\n\
-  /image [n=N] <prompt>    create an image based on the prompt\n\
-  /again                   regenerate the last chat response or image\n\
-  /history [clear]         show or clear chat history\n\
-\n\
-Admin commands (only available to admins in a one-to-one chat):\n\
-  /init [<initialization>] set or clear chat initialization\n\
-  /show [<property>...]    show all or specified properties\n\
-  /set <property> <value>  set the specified property\n\
-```";
+    "*Usage instructions*\n" +
+    "\n" +
+    "```\n" +
+    "Usage in a one-to-one chat:\n" +
+    "  <chat message>\n" +
+    "  /command [arguments...]\n" +
+    "\n" +
+    "Usage in a group space:\n" +
+    "  @<chatbot name> <chat message>\n" +
+    "  @<chatbot name> /command [arguments...]\n" +
+    "\n" +
+    "Commands:\n" +
+    "  /help                    show this help text\n" +
+    "  /image [n=N] <prompt>    create an image based on the prompt\n" +
+    "  /again                   regenerate the last chat response or image\n" +
+    "  /history [clear]         show or clear chat history\n" +
+    "\n" +
+    "Admin commands (only available to admins in a one-to-one chat):\n" +
+    "  /init [<initialization>] set or clear chat initialization\n" +
+    "  /show [<property>...]    show all or specified properties\n" +
+    "  /set <property> <value>  set the specified property\n" +
+    "```";
 
 const INVALID_ARGS_MSG = "Invalid command arguments";
 
@@ -121,7 +121,7 @@ function commandHelp(): GoogleChat.ResponseMessage {
  * Command "/image"
  */
 function commandImage(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
-    const match = arg ? arg.match(/^(?:n=([0-9]+)\s+)?(.*$)/) : undefined;
+    const match = arg ? arg.match(/^(?:n=(\d+)\s+)?(.*$)/) : undefined;
     if (match) {
         const nStr = match[1];
         const prompt = match[2]?.trim();
@@ -249,7 +249,8 @@ function commandShow(arg: string | undefined, message: GoogleChat.Message): Goog
             response += key + ": " + props[key];
             shown.push(key);
         });
-    args.sort().forEach((key) => {
+    args.sort();
+    args.forEach((key) => {
         if (!shown.includes(key)) {
             if (response) {
                 response += "\n";
