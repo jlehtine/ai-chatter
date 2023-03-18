@@ -5,7 +5,8 @@
             "files": "**/*.md",
             "options": {
                 "printWidth": 80,
-                "proseWrap": "always"
+                "proseWrap": "always",
+                "tabWidth": 2
             }
         }
     ]
