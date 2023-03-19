@@ -14,7 +14,7 @@ possible to implement the chat history without using any additional services.
 
 ## Build
 
-To build AI Chatter, you will need Node.js.
+To build AI Chatter, you will need Node.js (tested with major version 18).
 
 First install the required Node modules once with NPM.
 
