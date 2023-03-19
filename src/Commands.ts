@@ -1,11 +1,11 @@
-import { getChatAppName } from "./AIChatter";
 import {
     ChatCompletionInitialization,
     PROP_CHAT_COMPLETION_INIT,
     requestChatCompletion,
+    requestSimpleCompletion,
     USER_ASSISTANT,
 } from "./ChatCompletion";
-import { ChatError } from "./Errors";
+import { ChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
 import { requestImageGeneration } from "./Image";
@@ -16,6 +16,16 @@ import { millisNow } from "./Timestamp";
 
 const COMMAND_PREFIX = "/";
 const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/;
+
+const DEFAULT_INTRODUCTION =
+    "Hi! I'm a chat app. " +
+    "I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. " +
+    "You can also generate images with the OpenAI image generation model DALL·E.\n\n" +
+    "I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n" +
+    "For further help, try `/help` or `@<chat app name> /help`.\n\n" +
+    "Now let me ask ChatGPT to introduce itself and DALL·E...";
+
+const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
 
 const HELP_TEXT =
     "*Usage instructions*\n" +
@@ -31,6 +41,7 @@ const HELP_TEXT =
     "\n" +
     "Commands:\n" +
     "  /help                    show this help text\n" +
+    "  /intro                   replay the chat app introduction\n" +
     "  /image [n=N] <prompt>    create an image based on the prompt\n" +
     "  /again                   regenerate the last chat response or image\n" +
     "  /history [clear]         show or clear chat history\n" +
@@ -71,6 +82,8 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Bo
     const arg = match[2];
     if (cmd === "help") {
         return commandHelp();
+    } else if (cmd === "intro") {
+        return commandIntro();
     } else if (cmd === "image") {
         return commandImage(arg, event.message);
     } else if (cmd === "again") {
@@ -120,6 +133,60 @@ function getAdmins(): string[] {
  */
 function commandHelp(): GoogleChat.ResponseMessage {
     return GoogleChat.textResponse(HELP_TEXT.replaceAll("<chat app name>", getChatAppName()));
+}
+
+/**
+ * Command "/intro", also executed when added to a chat
+ */
+export function commandIntro(): GoogleChat.ResponseMessage {
+    // Create the static response
+    const introduction = getIntroduction();
+    const response = GoogleChat.textResponse(introduction);
+
+    // Ask chat completion to complement the request
+    try {
+        const prompt = getIntroductionPrompt();
+        if (prompt && prompt !== "none") {
+            checkModeration(prompt);
+            const completionResponse = requestSimpleCompletion(prompt, undefined, true);
+            if (completionResponse.text) {
+                GoogleChat.addDecoratedTextCard(
+                    response,
+                    "completion",
+                    "Introduction of ChatGPT and DALL·E by ChatGPT:",
+                    completionResponse.text
+                );
+            }
+        }
+    } catch (err) {
+        // Log the error and just ignore it to show the basic introduction
+        logError(err);
+    }
+
+    return response;
+}
+
+/**
+ * Returns the introduction shown when being added to a space.
+ */
+function getIntroduction(): string {
+    return (getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION).replaceAll("<chat app name>", getChatAppName());
+}
+
+/**
+ * Returns the introduction prompt provided to the chat completion to obtain a self provided introduction.
+ * Use an empty value or "none" to disable.
+ */
+function getIntroductionPrompt(): string {
+    return getStringProperty("INTRODUCTION_PROMPT") ?? DEFAULT_INTRODUCTION_PROMPT;
+}
+
+/**
+ * Returns the chat app name for help texts, if configured.
+ * Otherwise just returns "<chat app name>".
+ */
+function getChatAppName(): string {
+    return getStringProperty("CHAT_APP_NAME") ?? "<chat app name>";
 }
 
 /**

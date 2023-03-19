@@ -1,20 +1,10 @@
-import { requestChatCompletion, requestSimpleCompletion } from "./ChatCompletion";
-import { checkForCommand } from "./Commands";
+import { requestChatCompletion } from "./ChatCompletion";
+import { checkForCommand, commandIntro } from "./Commands";
 import { isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, removeHistoriesForSpace, saveHistory } from "./History";
 import { checkModeration } from "./Moderation";
-import { getBooleanProperty, getStringProperty } from "./Properties";
-
-const DEFAULT_INTRODUCTION =
-    "Hi! I'm a chat app. " +
-    "I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. " +
-    "You can also generate images with the OpenAI image generation model DALL·E.\n\n" +
-    "I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n" +
-    "For further help, try `/help` or `@<chat app name> /help`.\n\n" +
-    "Now let me ask ChatGPT to introduce itself and DALL·E...";
-
-const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
+import { getBooleanProperty } from "./Properties";
 
 /**
  * Responds to a received message.
@@ -72,30 +62,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
  */
 function onAddToSpace(): GoogleChat.BotResponse {
     try {
-        // Create the static response
-        const introduction = getIntroduction();
-        const response = GoogleChat.textResponse(introduction);
-
-        // Ask chat completion to complement the request, ignore failures
-        try {
-            const prompt = getIntroductionPrompt();
-            if (prompt && prompt !== "none") {
-                checkModeration(prompt);
-                const completionResponse = requestSimpleCompletion(prompt, undefined, true);
-                if (completionResponse.text) {
-                    GoogleChat.addDecoratedTextCard(
-                        response,
-                        "completion",
-                        "Introduction of ChatGPT and DALL·E by ChatGPT:",
-                        completionResponse.text
-                    );
-                }
-            }
-        } catch (err) {
-            logError(err);
-        }
-
-        return response;
+        return commandIntro();
     } catch (err) {
         return errorResponse(err);
     }
@@ -133,29 +100,6 @@ function errorResponse(err: unknown): GoogleChat.BotResponse {
  */
 function getLogGoogleChat(): boolean {
     return getBooleanProperty("LOG_GOOGLE_CHAT") ?? false;
-}
-
-/**
- * Returns the introduction shown when being added to a space.
- */
-function getIntroduction(): string {
-    return (getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION).replaceAll("<chat app name>", getChatAppName());
-}
-
-/**
- * Returns the introduction prompt provided to the chat completion to obtain a self provided introduction.
- * Use an empty value or "none" to disable.
- */
-function getIntroductionPrompt(): string {
-    return getStringProperty("INTRODUCTION_PROMPT") ?? DEFAULT_INTRODUCTION_PROMPT;
-}
-
-/**
- * Returns the chat app name for help texts, if configured.
- * Otherwise just returns "<chat app name>".
- */
-export function getChatAppName(): string {
-    return getStringProperty("CHAT_APP_NAME") ?? "<chat app name>";
 }
 
 // Export required globals
