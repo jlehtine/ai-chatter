@@ -129,3 +129,119 @@ Google Workspaces domain then you have to specifically allow the chat app
    interface controls_ and from there _Define third party application access
    rights_. Search your chat app using the application identifier from the
    previous step as the search string and make it trusted.
+
+## Configuration
+
+### Sensitive properties
+
+The following script properties must be set in the
+[Google Apps Script console](https://script.google.com/). Open your script,
+click cogwheel, open _Project settings_ and the script properties can be set at
+the end of the page. These properties can not be set over chat interface for
+security reasons.
+
+- `OPENAI_API_KEY`  
+  The mandatory OpenAI API key which must be kept secret.
+
+- `ADMINS`  
+  An optional list of user identifiers that are granted administrative
+  permissions. Admin users can use
+  [administrative commands](#administrative-commands) over a chat interface in a
+  one-to-one chat with the app. If multiple admin users are specified then the
+  identifiers must be separated by commas or spaces. The user identifiers are of
+  the form `user/<number-sequence>` and the easiest way to find yours is to send
+  the command `/show` to the app. If you are not an administrator it will
+  display an error message along with your user identifier.
+
+### Runtime properties
+
+The following script properties can be set either in Google Apps Script console
+as described in the previous section or an admin user can `/show` and `/set`
+them over the chat interface in a one-to-one chat with the app.
+
+- `CHAT_APP_NAME`  
+  default is `<chat app name>`  
+  Chat app name used in the help text and introductory texts returned by the
+  app. Set this to the actual name of your chat app as configured in Google
+  Cloud for better user experience.
+
+- `INTRODUCTION`  
+  Overrides the default chat app introduction text shown to the user when the
+  chat app is added to a new chat. Any occurrences of `<chat app name>` are
+  replaced by the value of property `CHAT_APP_NAME`, if set.
+
+- `INTRODUCTION_PROMPT`  
+  Overrides the default prompt sent to the chat completion API for obtaining
+  self-introduction from ChatGPT when the chat app is added to a new chat. Set
+  this property to `none` to disable the feature.
+
+- `HISTORY_MINUTES`  
+  must be a numeric JSON value, default is `60`  
+  Specifies how long the chat history is preserved, in minutes. Any chat
+  messages that are older are purged and not used as part of the chat completion
+  history for new chat messages. In other words, chat completion forgets any
+  older messages exchanged with the user in the current chat. Also the last
+  image command is remembered for the same duration, for command `/again`.
+
+- `MODERATION_URL`  
+  default is `https://api.openai.com/v1/moderations`  
+  URL of the OpenAI moderation API.
+
+- `CHAT_COMPLETION_URL`  
+  default is: `https://api.openai.com/v1/chat/completions`  
+  URL of the OpenAI chat completion API.
+
+- `CHAT_COMPLETION_MODEL`  
+  default is `gpt-3.5-turbo`  
+  OpenAI chat completion model to use.
+
+- `CHAT_COMPLETION_INIT`  
+  default is an empty array `[]`  
+  This property can be used to specify a chat completion initialization
+  sequence. It is a sequence of messages that is always added to chat completion
+  requests before actual stored chat history. In other words, it can be used to
+  specify permanent instructions for the chat completion model before any user
+  input. The value must be a JSON array containing objects compatible with the
+  chat completion API. Instead of setting this property directly, it is easier
+  to just use `/init` command to set the initialization prompt.
+
+- `CHAT_COMPLETION_SHOW_TOKENS`  
+  `true` or `false`, default is `false`  
+  OpenAI chat completion API uses tokens for pricing. This property specifies
+  whether to show the number of tokens used as part of the response returned to
+  the user. The total cost is also shown if `CHAT_COMPLETION_TOKEN_PRICE` has
+  been set.
+
+- `CHAT_COMPLETION_TOKEN_PRICE`  
+  must be a numeric JSON value (e.g. `0.000002`), default is unset  
+  Chat completion price per token in US dollars. If specified then the total
+  cost is shown along with the token usage if `CHAT_COMPLETION_SHOW_TOKENS` has
+  been set to `true`.
+
+- `IMAGE_GENERATION_URL`  
+  default is `https://api.openai.com/v1/images/generations`  
+  URL of the OpenAI image generation API.
+
+- `LOG_GOOGLE_CHAT` (`true` or `false`, default is `false`)  
+  Whether to log requests received from and responses returned to Google Chat.
+
+- `LOG_MODERATION` (`true` or `false`, default is `false`)  
+  Whether to log requests sent to and responses received from OpenAI moderation
+  API.
+
+- `LOG_CHAT_COMPLETION` (`true` or `false`, default is `false`)  
+  Whether to log requests sent to and responses received from OpenAI chat
+  completion API.
+
+- `LOG_IMAGE` (`true` or `false`, default is `false`)  
+  Whether to log requests sent to and responses received from OpenAI image API.
+
+- `
+
+## Usage
+
+TODO
+
+### User commands
+
+### Administrative commands
