@@ -12,6 +12,7 @@ without any additional cloud services.
 - [Deploy](#deploy)
 - [Configuration](#configuration)
 - [Usage](#usage)
+- [Development](#development)
 
 ## Limitations
 
@@ -230,18 +231,22 @@ them over the chat interface in a one-to-one chat with the app.
   default is `https://api.openai.com/v1/images/generations`  
   URL of the OpenAI image generation API.
 
-- `LOG_GOOGLE_CHAT` (`true` or `false`, default is `false`)  
+- `LOG_GOOGLE_CHAT`  
+  `true` or `false`, default is `false`  
   Whether to log requests received from and responses returned to Google Chat.
 
-- `LOG_MODERATION` (`true` or `false`, default is `false`)  
+- `LOG_MODERATION`  
+  `true` or `false`, default is `false`  
   Whether to log requests sent to and responses received from OpenAI moderation
   API.
 
-- `LOG_CHAT_COMPLETION` (`true` or `false`, default is `false`)  
+- `LOG_CHAT_COMPLETION`  
+  `true` or `false`, default is `false`  
   Whether to log requests sent to and responses received from OpenAI chat
   completion API.
 
-- `LOG_IMAGE` (`true` or `false`, default is `false`)  
+- `LOG_IMAGE`  
+  `true` or `false`, default is `false`  
   Whether to log requests sent to and responses received from OpenAI image API.
 
 ## Usage
@@ -251,3 +256,41 @@ TODO
 ### User commands
 
 ### Administrative commands
+
+## Development
+
+For development, it is recommended to use
+[Clasp](https://github.com/google/clasp) (Command Line Apps Script Projects)
+which makes it possible to do development locally and to sync changes to Google
+Apps Script from the command line.
+
+First login to Google Apps Script with Clasp. Depending on your Google Workspace
+security settings, you might first have to add Clasp as a trusted application.
+The stored login token will expire periodically (daily) and has to be repeated
+after expiration.
+
+```shell
+npx clasp login
+```
+
+Then clone the Apps Script project that you setup for the chat app into the
+`appsscript` directory. This is done only once to initialize the development
+environment. For this operation you will need the identifier of the script. Go
+to [Google Apps Script](https://script.google.com/), open your chat app script,
+click cogwheel on the left, open _Project settings_ and copy the script
+identifier.
+
+```shell
+( cd appsscript && npx clasp clone <script id> )
+```
+
+Now you can compile a new version and push it to Google Apps Script using just
+command line.
+
+```shell
+npm run build
+npm run push
+```
+
+You can also use Clasp for other tasks such as publishing a new version of the
+app. Execute any Clasp commands in the `appsscript` directory.
