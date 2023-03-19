@@ -5,6 +5,13 @@ which uses the [OpenAI](https://openai.com/) chat completion API and image
 generation API and runs on Google Apps Script without any additional cloud
 services.
 
+## Limitations
+
+This implementation is not suitable for heavy use because it relies on Google
+Apps Script properties for storing chat history data. The script properties are
+not designed for storing such quickly changing information but they made it
+possible to implement the chat history without using any additional services.
+
 ## Build
 
 To build AI Chatter, you will need Node.js.
