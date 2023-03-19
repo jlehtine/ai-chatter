@@ -27,7 +27,7 @@
         "format": "prettier --ignore-path .gitignore --write .",
         "clean": "rm -f appsscript/*.js appsscript/*.js.map",
         "build": "npx webpack",
-        "push": "npx clasp push"
+        "push": "cd appsscript && npx clasp push"
     },
     "lint-staged": {
         "**/*.ts": "eslint",
