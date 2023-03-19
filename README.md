@@ -5,6 +5,14 @@ which uses the [OpenAI](https://openai.com/) chat completion API and image
 generation API and runs on Google Apps Script without any additional cloud
 services.
 
+## Contents
+
+- [Limitations](#limitations)
+- [Build](#build)
+- [Deploy](#deploy)
+- [Configuration](#configuration)
+- [Usage](#usage)
+
 ## Limitations
 
 This implementation is not suitable for heavy use because it relies on Google
