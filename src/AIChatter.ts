@@ -7,11 +7,11 @@ import { checkModeration } from "./Moderation";
 import { getBooleanProperty, getStringProperty } from "./Properties";
 
 const DEFAULT_INTRODUCTION =
-    "Hi! I'm a chatbot. " +
+    "Hi! I'm a chat app. " +
     "I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. " +
     "You can also generate images with the OpenAI image generation model DALL·E.\n\n" +
     "I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n" +
-    "For further help, try `/help` or `@<chatbot name> /help`.\n\n" +
+    "For further help, try `/help` or `@<chat app name> /help`.\n\n" +
     "Now let me ask ChatGPT to introduce itself and DALL·E...";
 
 const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
@@ -139,7 +139,7 @@ function getLogGoogleChat(): boolean {
  * Returns the introduction shown when being added to a space.
  */
 function getIntroduction(): string {
-    return (getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION).replaceAll("<chatbot name>", getChatbotName());
+    return (getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION).replaceAll("<chat app name>", getChatAppName());
 }
 
 /**
@@ -151,11 +151,11 @@ function getIntroductionPrompt(): string {
 }
 
 /**
- * Returns the chatbot name for help texts, if configured.
- * Otherwise just returns "<chatbot name>".
+ * Returns the chat app name for help texts, if configured.
+ * Otherwise just returns "<chat app name>".
  */
-export function getChatbotName(): string {
-    return getStringProperty("CHATBOT_NAME") ?? "<chatbot name>";
+export function getChatAppName(): string {
+    return getStringProperty("CHAT_APP_NAME") ?? "<chat app name>";
 }
 
 // Export required globals

@@ -1,4 +1,4 @@
-import { getChatbotName } from "./AIChatter";
+import { getChatAppName } from "./AIChatter";
 import { ChatCompletionInitialization, PROP_CHAT_INIT, requestChatCompletion, USER_ASSISTANT } from "./ChatCompletion";
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
@@ -21,8 +21,8 @@ const HELP_TEXT =
     "  /command [arguments...]\n" +
     "\n" +
     "Usage in a group space:\n" +
-    "  @<chatbot name> <chat message>\n" +
-    "  @<chatbot name> /command [arguments...]\n" +
+    "  @<chat app name> <chat message>\n" +
+    "  @<chat app name> /command [arguments...]\n" +
     "\n" +
     "Commands:\n" +
     "  /help                    show this help text\n" +
@@ -114,7 +114,7 @@ function getAdmins(): string[] {
  * Command "/help"
  */
 function commandHelp(): GoogleChat.ResponseMessage {
-    return GoogleChat.textResponse(HELP_TEXT.replaceAll("<chatbot name>", getChatbotName()));
+    return GoogleChat.textResponse(HELP_TEXT.replaceAll("<chat app name>", getChatAppName()));
 }
 
 /**
