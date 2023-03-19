@@ -268,7 +268,7 @@ function isOkResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): boolea
  * Returns whether to show token usage to the user as part of the response.
  */
 function getShowTokens(): boolean {
-    return getBooleanProperty("SHOW_TOKENS") ?? false;
+    return getBooleanProperty("CHAT_COMPLETION_SHOW_TOKENS") ?? false;
 }
 
 /**
