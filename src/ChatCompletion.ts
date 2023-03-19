@@ -1,6 +1,6 @@
 import { ChatError } from "./Errors";
 import { ChatHistoryMessage } from "./History";
-import { getBooleanProperty, getNumberProperty, getObjectProperty, getStringProperty } from "./Properties";
+import { getBooleanProperty, getNumberProperty, getJSONProperty, getStringProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
 import { checkModeration } from "./Moderation";
@@ -194,7 +194,7 @@ function getChatCompletionModel(): string {
  * Returns the initialization sequence for a chat.
  */
 function getChatCompletionInit(): ChatCompletionMessage[] {
-    const init = getObjectProperty(PROP_CHAT_COMPLETION_INIT) ?? DEFAULT_CHAT_INIT;
+    const init = getJSONProperty(PROP_CHAT_COMPLETION_INIT) ?? DEFAULT_CHAT_INIT;
     if (!isValidInit(init)) {
         throw new ChatCompletionConfigurationError("Invalid initialization sequence: " + PROP_CHAT_COMPLETION_INIT);
     }

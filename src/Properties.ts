@@ -79,20 +79,18 @@ export function getBooleanProperty(property: string): boolean | undefined {
 }
 
 /**
- * Returns an object valued property.
+ * Returns a JSON valued property.
  *
  * @param property property name
- * @return property value as an object, or undefined if not set
+ * @return property value parsed from JSON, or undefined if not set
  */
-export function getObjectProperty(property: string): unknown {
+export function getJSONProperty(property: string): unknown {
     const str = getStringProperty(property);
-    if (typeof str === "string") {
-        const obj = JSON.parse(str);
-        if (typeof obj === "object") {
-            return obj;
-        }
+    if (str !== undefined) {
+        return JSON.parse(str);
+    } else {
+        return undefined;
     }
-    return undefined;
 }
 
 /**
@@ -101,10 +99,7 @@ export function getObjectProperty(property: string): unknown {
  * @param property property name
  * @param value property value
  */
-export function setObjectProperty(property: string, value: unknown) {
-    if (typeof value !== "object") {
-        throw new Error("Not an object");
-    }
+export function setJSONProperty(property: string, value: unknown) {
     setStringProperty(property, JSON.stringify(value));
 }
 

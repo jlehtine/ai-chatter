@@ -1,4 +1,4 @@
-import { getProperties, getNumberProperty, getObjectProperty, setObjectProperty, deleteProperty } from "./Properties";
+import { getProperties, getNumberProperty, getJSONProperty, setJSONProperty, deleteProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 import { MillisSinceEpoch, Millis, millisNow, minutesToMillis, differenceMillis } from "./Timestamp";
 import { CausedError, logError } from "./Errors";
@@ -50,7 +50,7 @@ function createChatHistory(message: GoogleChat.Message): ChatHistory {
 export function getHistory(message: GoogleChat.Message, asIs = false): ChatHistory {
     // Check if history exists and add to existing or create a new
     const historyKey = getHistoryKeyForMessage(message);
-    const historyObj = getObjectProperty(historyKey);
+    const historyObj = getJSONProperty(historyKey);
     let history: ChatHistory;
     if (isChatHistory(historyObj)) {
         history = historyObj;
@@ -80,7 +80,7 @@ export function saveHistory(history: ChatHistory) {
     let saved = false;
     while (!saved) {
         try {
-            setObjectProperty(historyKey, history);
+            setJSONProperty(historyKey, history);
             saved = true;
         } catch (err: unknown) {
             logError(err);

@@ -11,11 +11,19 @@ import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
 import { requestImageGeneration } from "./Image";
 import { checkModeration } from "./Moderation";
 import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
-import { deleteProperty, getProperties, getStringProperty, setObjectProperty, setStringProperty } from "./Properties";
+import {
+    deleteProperty,
+    getJSONProperty,
+    getProperties,
+    getStringProperty,
+    setJSONProperty,
+    setStringProperty,
+} from "./Properties";
 import { millisNow } from "./Timestamp";
+import { asStringOpt } from "./typeutil";
 
 const COMMAND_PREFIX = "/";
-const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/;
+const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/s;
 
 const DEFAULT_INTRODUCTION =
     "Hi! I'm a chat app. " +
@@ -30,7 +38,7 @@ const DEFAULT_INTRODUCTION =
 
 const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
 
-const HELP_TEXT =
+const DEFAULT_HELP_TEXT =
     "*Usage instructions*\n" +
     "\n" +
     "```\n" +
@@ -148,11 +156,14 @@ function getAdmins(): string[] {
  */
 function commandHelp(message: GoogleChat.Message): GoogleChat.ResponseMessage {
     return GoogleChat.textResponse(
-        HELP_TEXT.replace("<admin-commands>", isAdmin(message) ? HELP_TEXT_ADMIN : "").replaceAll(
-            "<chat app name>",
-            getChatAppName()
-        )
+        getHelpText()
+            .replace("<admin-commands>", isAdmin(message) ? HELP_TEXT_ADMIN : "")
+            .replaceAll("<chat app name>", getChatAppName())
     );
+}
+
+function getHelpText() {
+    return asStringOpt(getJSONProperty("HELP_TEXT")) ?? DEFAULT_HELP_TEXT;
 }
 
 /**
@@ -302,7 +313,7 @@ function commandInit(arg: string | undefined, message: GoogleChat.Message): Goog
                 content: arg.trim(),
             },
         ];
-        setObjectProperty(PROP_CHAT_COMPLETION_INIT, initSeq);
+        setJSONProperty(PROP_CHAT_COMPLETION_INIT, initSeq);
         return GoogleChat.textResponse(
             "Chat completion initialization sequence:\n```\n" + JSON.stringify(initSeq, null, 2) + "\n```"
         );
@@ -366,7 +377,7 @@ function commandSet(arg: string | undefined, message: GoogleChat.Message): Googl
     // Parse arguments
     let match = null;
     if (arg) {
-        match = arg.trim().match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/);
+        match = arg.trim().match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/s);
     }
     if (match) {
         const key = match[1];
