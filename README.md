@@ -236,8 +236,6 @@ them over the chat interface in a one-to-one chat with the app.
 - `LOG_IMAGE` (`true` or `false`, default is `false`)  
   Whether to log requests sent to and responses received from OpenAI image API.
 
-- `
-
 ## Usage
 
 TODO
