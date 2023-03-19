@@ -68,7 +68,7 @@ export interface CardSection {
     collapsible?: boolean;
 }
 
-export type CardWidget = TextParagraphWidget | ImageWidget | DecoratedTextWidget | DividerWidget;
+export type CardWidget = TextParagraphWidget | ImageWidget | DecoratedTextWidget | ButtonListWidget | DividerWidget;
 
 export interface TextParagraphWidget {
     textParagraph: TextParagraph;
@@ -80,6 +80,10 @@ export interface ImageWidget {
 
 export interface DecoratedTextWidget {
     decoratedText: DecoratedText;
+}
+
+export interface ButtonListWidget {
+    buttonList: ButtonList;
 }
 
 export interface DividerWidget {
@@ -100,6 +104,27 @@ export interface DecoratedText {
     text: string;
     wrapText?: boolean;
     bottomLabel?: string;
+}
+
+export interface ButtonList {
+    buttons: Button[];
+}
+
+export interface Button {
+    text?: string;
+    onClick: OnClick;
+    disabled?: boolean;
+    altText?: string;
+}
+
+export type OnClick = OnClickOpenLink;
+
+export interface OnClickOpenLink {
+    openLink: OpenLink;
+}
+
+export interface OpenLink {
+    url: string;
 }
 
 export type BotResponse = ResponseMessage | void;

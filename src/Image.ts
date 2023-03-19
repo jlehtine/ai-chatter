@@ -41,14 +41,28 @@ class ImageGenerationError extends ChatError {
  * Requests image generation for the specified prompt and the number of images.
  * Returns the resulting images as a chat response.
  */
-export function requestImageGeneration(prompt: string, user: string, n = 1): GoogleChat.ResponseMessage {
+export function requestImageGeneration(
+    prompt: string,
+    user: string,
+    n = 1,
+    imageSize?: ImageSize
+): GoogleChat.ResponseMessage {
     // Prepare image generation request
     if (n !== Math.round(n) || n < 1 || n > 10) {
         throw new ImageGenerationError("Option n must be an integer from 1 to 10");
     }
+    if (imageSize === undefined) {
+        if (n > 4) {
+            imageSize = "256x256";
+        } else if (n > 1) {
+            imageSize = "512x512";
+        } else {
+            imageSize = "1024x1024";
+        }
+    }
     const url = getImageGenerationUrl();
     const apiKey = getOpenAIAPIKey();
-    const request = createImageGenerationRequest(prompt, user, n);
+    const request = createImageGenerationRequest(prompt, user, n, imageSize);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -76,9 +90,7 @@ export function requestImageGeneration(prompt: string, user: string, n = 1): Goo
 
     // Format results
     const chatResponse = GoogleChat.decoratedTextResponse("images", "Generated images", '"' + prompt + '"');
-    const cardsV2 = chatResponse.cardsV2;
-    const sections = cardsV2 ? cardsV2[0].card.sections : undefined;
-    const widgets = sections ? sections[0].widgets : undefined;
+    const widgets = chatResponse?.cardsV2?.[0]?.card?.sections?.[0]?.widgets;
     if (widgets) {
         response.data.forEach((img) => {
             widgets.push({
@@ -87,6 +99,23 @@ export function requestImageGeneration(prompt: string, user: string, n = 1): Goo
                 },
             });
         });
+        if (response.data.length > 0) {
+            widgets.push({
+                buttonList: {
+                    buttons: response.data.map((img, index) => ({
+                        text:
+                            response.data.length == 1
+                                ? "High quality image (valid for one hour)"
+                                : "Image " + (index + 1),
+                        onClick: {
+                            openLink: {
+                                url: img.url,
+                            },
+                        },
+                    })),
+                },
+            });
+        }
     }
     return chatResponse;
 }
@@ -95,11 +124,16 @@ function getImageGenerationUrl(): string {
     return getStringProperty("IMAGE_GENERATION_URL") ?? "https://api.openai.com/v1/images/generations";
 }
 
-function createImageGenerationRequest(prompt: string, user: string, n: number): ImageGenerationRequest {
+function createImageGenerationRequest(
+    prompt: string,
+    user: string,
+    n: number,
+    imageSize?: ImageSize
+): ImageGenerationRequest {
     return {
         prompt: prompt,
         n: n,
-        size: "512x512",
+        size: imageSize,
         user: user,
     };
 }
