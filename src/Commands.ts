@@ -48,12 +48,15 @@ const HELP_TEXT =
     "  /image [n=N] <prompt>    create an image based on the prompt\n" +
     "  /again                   regenerate the last chat response or image\n" +
     "  /history [clear]         show or clear chat history\n" +
+    "<admin-commands>" +
+    "```";
+
+const HELP_TEXT_ADMIN =
     "\n" +
     "Admin commands (only available to admins in a one-to-one chat):\n" +
     "  /init [<initialization>] set or clear chat initialization\n" +
     "  /show [<property>...]    show all or specified properties\n" +
-    "  /set <property> <value>  set the specified property\n" +
-    "```";
+    "  /set <property> <value>  set the specified property\n";
 
 const INVALID_ARGS_MSG = "Invalid command arguments";
 
@@ -84,7 +87,7 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Bo
     const cmd = match[1];
     const arg = match[2];
     if (cmd === "help") {
-        return commandHelp();
+        return commandHelp(event.message);
     } else if (cmd === "intro") {
         return commandIntro();
     } else if (cmd === "image") {
@@ -113,10 +116,19 @@ function checkAdmin(message: GoogleChat.Message): void {
     if (message.space.singleUserBotDm !== true) {
         throw new CommandError("This command is only available in a direct messaging chat between an admin and a bot.");
     }
-    const admins = getAdmins();
-    if (!admins.includes(message.sender.name)) {
+    if (!isAdmin(message)) {
         throw new UnauthorizedError("Unauthorized for this command: " + message.sender.name);
     }
+}
+
+/**
+ * Returns whether the message sending user is an admin.
+ *
+ * @param message message
+ * @returns whether the message sneding user is an admin
+ */
+function isAdmin(message: GoogleChat.Message): boolean {
+    return getAdmins().includes(message.sender.name);
 }
 
 /**
@@ -134,8 +146,13 @@ function getAdmins(): string[] {
 /**
  * Command "/help"
  */
-function commandHelp(): GoogleChat.ResponseMessage {
-    return GoogleChat.textResponse(HELP_TEXT.replaceAll("<chat app name>", getChatAppName()));
+function commandHelp(message: GoogleChat.Message): GoogleChat.ResponseMessage {
+    return GoogleChat.textResponse(
+        HELP_TEXT.replace("<admin-commands>", isAdmin(message) ? HELP_TEXT_ADMIN : "").replaceAll(
+            "<chat app name>",
+            getChatAppName()
+        )
+    );
 }
 
 /**
