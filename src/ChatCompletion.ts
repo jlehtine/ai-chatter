@@ -64,7 +64,7 @@ class ChatCompletionError extends ChatError {
 export const USER_ASSISTANT = "__assistant__";
 
 /** Property key for the initialization sequence of a chat */
-export const PROP_CHAT_INIT = "CHAT_INIT";
+export const PROP_CHAT_COMPLETION_INIT = "CHAT_COMPLETION_INIT";
 
 /** Default initialization sequence for a chat */
 const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
@@ -170,7 +170,7 @@ function createChatCompletionRequest(
     skipInit: boolean
 ): ChatCompletionRequest {
     return {
-        model: getModel(),
+        model: getChatCompletionModel(),
         messages: toChatCompletionMessages(messages, skipInit),
         user: user,
     };
@@ -186,17 +186,17 @@ function getLogChatCompletion(): boolean {
 }
 
 /** Returns the chat completion model to be used */
-function getModel(): string {
+function getChatCompletionModel(): string {
     return getStringProperty("CHAT_COMPLETION_MODEL") ?? "gpt-3.5-turbo";
 }
 
 /**
  * Returns the initialization sequence for a chat.
  */
-function getInit(): ChatCompletionMessage[] {
-    const init = getObjectProperty(PROP_CHAT_INIT) ?? DEFAULT_CHAT_INIT;
+function getChatCompletionInit(): ChatCompletionMessage[] {
+    const init = getObjectProperty(PROP_CHAT_COMPLETION_INIT) ?? DEFAULT_CHAT_INIT;
     if (!isValidInit(init)) {
-        throw new ChatCompletionConfigurationError("Invalid initialization sequence: " + PROP_CHAT_INIT);
+        throw new ChatCompletionConfigurationError("Invalid initialization sequence: " + PROP_CHAT_COMPLETION_INIT);
     }
     return init;
 }
@@ -221,7 +221,7 @@ function isValidInit(obj: unknown): obj is ChatCompletionMessage[] {
  * Converts a chat history into an array of chat messages suitable for a completion request.
  */
 function toChatCompletionMessages(messages: ChatHistoryMessage[], skipInit: boolean): ChatCompletionMessage[] {
-    return (skipInit ? [] : getInit()).concat(messages.map((m) => toChatCompletionMessage(m)));
+    return (skipInit ? [] : getChatCompletionInit()).concat(messages.map((m) => toChatCompletionMessage(m)));
 }
 
 /**

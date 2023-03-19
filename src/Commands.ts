@@ -1,5 +1,10 @@
 import { getChatAppName } from "./AIChatter";
-import { ChatCompletionInitialization, PROP_CHAT_INIT, requestChatCompletion, USER_ASSISTANT } from "./ChatCompletion";
+import {
+    ChatCompletionInitialization,
+    PROP_CHAT_COMPLETION_INIT,
+    requestChatCompletion,
+    USER_ASSISTANT,
+} from "./ChatCompletion";
 import { ChatError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
@@ -210,7 +215,7 @@ function commandInit(arg: string | undefined, message: GoogleChat.Message): Goog
                 content: arg.trim(),
             },
         ];
-        setObjectProperty(PROP_CHAT_INIT, initSeq);
+        setObjectProperty(PROP_CHAT_COMPLETION_INIT, initSeq);
         return GoogleChat.textResponse(
             "Chat completion initialization sequence:\n```\n" + JSON.stringify(initSeq, null, 2) + "\n```"
         );
@@ -218,7 +223,7 @@ function commandInit(arg: string | undefined, message: GoogleChat.Message): Goog
 
     // Or clear it
     else {
-        deleteProperty(PROP_CHAT_INIT);
+        deleteProperty(PROP_CHAT_COMPLETION_INIT);
         return GoogleChat.textResponse("Chat completion initialization sequence cleared");
     }
 }
