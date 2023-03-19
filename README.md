@@ -2,8 +2,8 @@
 
 AI Chatter is a proof-of-concept project for creating a simple Google Chat app
 which uses the [OpenAI](https://openai.com/) chat completion API and image
-generation API and runs on Google Apps Script without any additional cloud
-services.
+generation API and runs on [Google Apps Script](https://script.google.com/)
+without any additional cloud services.
 
 ## Contents
 
