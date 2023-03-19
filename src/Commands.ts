@@ -1,7 +1,9 @@
 import {
     ChatCompletionInitialization,
+    getChatCompletionText,
     PROP_CHAT_COMPLETION_INIT,
     requestChatCompletion,
+    requestNativeChatCompletion,
     requestSimpleCompletion,
     USER_ASSISTANT,
 } from "./ChatCompletion";
@@ -74,8 +76,9 @@ const PROP_ADMINS = "ADMINS";
 const PROP_INTRODUCTION = "INTRODUCTION";
 const PROP_INTRODUCTION_PROMPT = "INTRODUCTION_PROMPT";
 const PROP_HELP_TEXT = "HELP_TEXT";
+const PROP_IMAGE_PROMPT_TRANSLATION = "IMAGE_PROMPT_TRANSLATION";
 
-const JSON_STRING_PROPS = [PROP_INTRODUCTION, PROP_INTRODUCTION_PROMPT, PROP_HELP_TEXT];
+const JSON_STRING_PROPS = [PROP_INTRODUCTION, PROP_INTRODUCTION_PROMPT, PROP_HELP_TEXT, PROP_IMAGE_PROMPT_TRANSLATION];
 
 class CommandError extends ChatError {}
 
@@ -249,8 +252,26 @@ function commandImage(arg: string | undefined, message: GoogleChat.Message): Goo
             };
             saveHistory(history);
 
+            // If so configured, translate the image prompt using chat completion
+            let finalPrompt = prompt;
+            const imagePromptTranslation = asStringOpt(getJSONProperty(PROP_IMAGE_PROMPT_TRANSLATION));
+            if (imagePromptTranslation !== undefined) {
+                try {
+                    const chatPrompt = imagePromptTranslation.replace("<image prompt>", prompt);
+                    const response = requestNativeChatCompletion(
+                        [{ time: millisNow(), user: "User", text: chatPrompt }],
+                        message.sender.name,
+                        true
+                    );
+                    finalPrompt = getChatCompletionText(response);
+                } catch (err) {
+                    // Log the error and just ignore it to continue with the original prompt
+                    logError(err);
+                }
+            }
+
             // Image generation
-            return requestImageGeneration(prompt, message.sender.name, nStr ? Number(nStr) : undefined);
+            return requestImageGeneration(finalPrompt, message.sender.name, nStr ? Number(nStr) : undefined);
         }
     }
     throw new CommandError(INVALID_ARGS_MSG);

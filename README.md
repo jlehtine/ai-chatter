@@ -240,6 +240,16 @@ them over the chat interface in a one-to-one chat with the app.
   default is `https://api.openai.com/v1/images/generations`  
   URL of the OpenAI image generation API.
 
+- `IMAGE_PROMPT_TRANSLATION`  
+  JSON string value, e.g. `"Something\nlike\nthis"`, default is unset  
+  This property can be used to translate image requests using chat completion
+  before they are sent to the image generation API. If set, the value must be a
+  JSON string value and it must contain string `<image prompt>` which will be
+  replaced by the original image prompt. This value is then sent to the chat
+  completion API and its response is used as input to image generation API. A
+  typical use case would be to translate image prompts to English for a better
+  response.
+
 - `LOG_GOOGLE_CHAT`  
   `true` or `false`, default is `false`  
   Whether to log requests received from and responses returned to Google Chat.

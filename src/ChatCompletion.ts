@@ -94,6 +94,38 @@ export function requestChatCompletion(
     user?: string,
     skipInit = false
 ): GoogleChat.ResponseMessage {
+    // Make native chat completion request
+    const response = requestNativeChatCompletion(messages, user, skipInit);
+    const responseText = getChatCompletionText(response);
+
+    // Moderate output
+    checkModeration(responseText);
+
+    // Format completion result
+    const showTokens = getShowTokens();
+    const chatResponse = GoogleChat.textResponse(responseText);
+    if (showTokens) {
+        let tokenUsage =
+            "Prompt tokens: " +
+            response.usage.prompt_tokens +
+            "\nCompletion tokens: " +
+            response.usage.completion_tokens +
+            "\nTotal tokens: " +
+            response.usage.total_tokens;
+        const tokenPrice = getChatCompletionTokenPrice();
+        if (typeof tokenPrice === "number") {
+            tokenUsage += "\nTotal cost: $" + tokenPrice * response.usage.total_tokens;
+        }
+        GoogleChat.addDecoratedTextCard(chatResponse, "tokens", "Token usage", tokenUsage);
+    }
+    return chatResponse;
+}
+
+export function requestNativeChatCompletion(
+    messages: ChatHistoryMessage[],
+    user?: string,
+    skipInit = false
+): ChatCompletionResponse {
     // Prepare chat completion request
     const url = getChatCompletionURL();
     const apiKey = getOpenAIAPIKey();
@@ -134,31 +166,20 @@ export function requestChatCompletion(
             console.log("Chat completion response was:\n" + JSON.stringify(response, null, 2));
             throw err;
         }
+        return response;
     } catch (err) {
         throw new ChatCompletionError("Error while performing chat completion", err);
     }
+}
 
-    // Moderate output
-    checkModeration(responseMessage.text);
-
-    // Format completion result
-    const showTokens = getShowTokens();
-    const chatResponse = GoogleChat.textResponse(responseMessage.text);
-    if (showTokens) {
-        let tokenUsage =
-            "Prompt tokens: " +
-            response.usage.prompt_tokens +
-            "\nCompletion tokens: " +
-            response.usage.completion_tokens +
-            "\nTotal tokens: " +
-            response.usage.total_tokens;
-        const tokenPrice = getChatCompletionTokenPrice();
-        if (typeof tokenPrice === "number") {
-            tokenUsage += "\nTotal cost: $" + tokenPrice * response.usage.total_tokens;
-        }
-        GoogleChat.addDecoratedTextCard(chatResponse, "tokens", "Token usage", tokenUsage);
-    }
-    return chatResponse;
+/**
+ * Returns the actual chat completion response text given a full response object.
+ *
+ * @param response response object
+ * @returns chat completion response text
+ */
+export function getChatCompletionText(response: ChatCompletionResponse): string {
+    return response.choices[0].message.content.trim();
 }
 
 /**
