@@ -201,7 +201,10 @@ export function commandIntro(): GoogleChat.ResponseMessage {
  * Returns the introduction shown when being added to a space.
  */
 function getIntroduction(): string {
-    return (getStringProperty("INTRODUCTION") ?? DEFAULT_INTRODUCTION).replaceAll("<chat app name>", getChatAppName());
+    return (asStringOpt(getJSONProperty("INTRODUCTION")) ?? DEFAULT_INTRODUCTION).replaceAll(
+        "<chat app name>",
+        getChatAppName()
+    );
 }
 
 /**
@@ -209,7 +212,7 @@ function getIntroduction(): string {
  * Use an empty value or "none" to disable.
  */
 function getIntroductionPrompt(): string {
-    return getStringProperty("INTRODUCTION_PROMPT") ?? DEFAULT_INTRODUCTION_PROMPT;
+    return asStringOpt(getJSONProperty("INTRODUCTION_PROMPT")) ?? DEFAULT_INTRODUCTION_PROMPT;
 }
 
 /**
