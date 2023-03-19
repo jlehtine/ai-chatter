@@ -38,7 +38,7 @@ const DEFAULT_INTRODUCTION =
     "For further help, try `/help` or `@<chat app name> /help`.\n\n" +
     "Now let me ask ChatGPT to introduce itself and DALL·E...";
 
-const DEFAULT_INTRODUCTION_PROMPT = "Briefly introduce the ChatGPT and DALL·E to the user.";
+const DEFAULT_INTRODUCTION_PROMPT = "Introduce ChatGPT and DALL·E briefly to the user.";
 
 const DEFAULT_HELP_TEXT =
     "*Usage instructions*\n" +
@@ -190,12 +190,7 @@ export function commandIntro(): GoogleChat.ResponseMessage {
             checkModeration(prompt);
             const completionResponse = requestSimpleCompletion(prompt, undefined, true);
             if (completionResponse.text) {
-                GoogleChat.addDecoratedTextCard(
-                    response,
-                    "completion",
-                    "Introduction of ChatGPT and DALL·E by ChatGPT:",
-                    completionResponse.text
-                );
+                GoogleChat.addDecoratedTextCard(response, "completion", prompt, "\n" + completionResponse.text);
             }
         }
     } catch (err) {
