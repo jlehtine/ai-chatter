@@ -71,6 +71,12 @@ const INVALID_ARGS_MSG = "Invalid command arguments";
 /** Property listing admin users */
 const PROP_ADMINS = "ADMINS";
 
+const PROP_INTRODUCTION = "INTRODUCTION";
+const PROP_INTRODUCTION_PROMPT = "INTRODUCTION_PROMPT";
+const PROP_HELP_TEXT = "HELP_TEXT";
+
+const JSON_STRING_PROPS = [PROP_INTRODUCTION, PROP_INTRODUCTION_PROMPT, PROP_HELP_TEXT];
+
 class CommandError extends ChatError {}
 
 class UnauthorizedError extends CommandError {}
@@ -163,7 +169,7 @@ function commandHelp(message: GoogleChat.Message): GoogleChat.ResponseMessage {
 }
 
 function getHelpText() {
-    return asStringOpt(getJSONProperty("HELP_TEXT")) ?? DEFAULT_HELP_TEXT;
+    return asStringOpt(getJSONProperty(PROP_HELP_TEXT)) ?? DEFAULT_HELP_TEXT;
 }
 
 /**
@@ -201,7 +207,7 @@ export function commandIntro(): GoogleChat.ResponseMessage {
  * Returns the introduction shown when being added to a space.
  */
 function getIntroduction(): string {
-    return (asStringOpt(getJSONProperty("INTRODUCTION")) ?? DEFAULT_INTRODUCTION).replaceAll(
+    return (asStringOpt(getJSONProperty(PROP_INTRODUCTION)) ?? DEFAULT_INTRODUCTION).replaceAll(
         "<chat app name>",
         getChatAppName()
     );
@@ -212,7 +218,7 @@ function getIntroduction(): string {
  * Use an empty value or "none" to disable.
  */
 function getIntroductionPrompt(): string {
-    return asStringOpt(getJSONProperty("INTRODUCTION_PROMPT")) ?? DEFAULT_INTRODUCTION_PROMPT;
+    return asStringOpt(getJSONProperty(PROP_INTRODUCTION_PROMPT)) ?? DEFAULT_INTRODUCTION_PROMPT;
 }
 
 /**
@@ -352,7 +358,7 @@ function commandShow(arg: string | undefined, message: GoogleChat.Message): Goog
             if (response) {
                 response += "\n";
             }
-            response += key + ": " + props[key];
+            response += key + ": " + quoteShownValue(key, props[key]);
             shown.push(key);
         });
     args.sort();
@@ -369,6 +375,14 @@ function commandShow(arg: string | undefined, message: GoogleChat.Message): Goog
         }
     });
     return GoogleChat.textResponse("```\n" + response + "\n```");
+}
+
+function quoteShownValue(property: string, value: string) {
+    if (JSON_STRING_PROPS.includes(property)) {
+        return value.replaceAll("`", "\\u0060").replaceAll("\n", "\\n").replaceAll("\r", "\\r");
+    } else {
+        return value;
+    }
 }
 
 /**
