@@ -176,14 +176,22 @@ them over the chat interface in a one-to-one chat with the app.
   Cloud for better user experience.
 
 - `INTRODUCTION`  
+  JSON string value, e.g. `"Something\nlike\nthis"`  
   Overrides the default chat app introduction text shown to the user when the
   chat app is added to a new chat. Any occurrences of `<chat app name>` are
   replaced by the value of property `CHAT_APP_NAME`, if set.
 
 - `INTRODUCTION_PROMPT`  
+  JSON string value, e.g. `"Something\nlike\nthis"`  
   Overrides the default prompt sent to the chat completion API for obtaining
   self-introduction from ChatGPT when the chat app is added to a new chat. Set
   this property to `none` to disable the feature.
+
+- `HELP_TEXT`  
+  JSON string value, e.g. `"Something\nlike\nthis"`  
+  Overrides the default help text returned by the `/help` command. An occurrence
+  of `<admin-commands>` is replaced by the standard admin commands help section
+  if the user is an admin user.
 
 - `HISTORY_MINUTES`  
   must be a numeric JSON value, default is `60`  
