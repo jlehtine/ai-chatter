@@ -264,7 +264,11 @@ For development, it is recommended to use
 which makes it possible to do development locally and to sync changes to Google
 Apps Script from the command line.
 
-First login to Google Apps Script with Clasp. Depending on your Google Workspace
+First go to
+[Google Apps Script user settings](https://script.google.com/home/usersettings)
+and enable Google Apps Script API if it is not enabled.
+
+Now login to Google Apps Script with Clasp. Depending on your Google Workspace
 security settings, you might first have to add Clasp as a trusted application.
 The stored login token will expire periodically (daily) and has to be repeated
 after expiration.
