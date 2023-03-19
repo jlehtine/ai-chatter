@@ -19,9 +19,12 @@ const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/;
 
 const DEFAULT_INTRODUCTION =
     "Hi! I'm a chat app. " +
-    "I will relay your chat messages to the OpenAI chat completion model ChatGPT and replay you the generated response. " +
-    "You can also generate images with the OpenAI image generation model DALL·E.\n\n" +
-    "I am not in any way endorsed by OpenAI, just relaying your input to their API.\n\n" +
+    "I will connect you to OpenAI artificial intelligence based services " +
+    "such as the ChatGPT chat completion model and DALL·E image generation " +
+    "model. However, this chat app itself is not in any way associated with " +
+    "or endorsed by OpenAI.\n\n" +
+    "Just send me your input as chat messages. In a group space you must " +
+    "mention me with @<chat app name> notation to get my attention. " +
     "For further help, try `/help` or `@<chat app name> /help`.\n\n" +
     "Now let me ask ChatGPT to introduce itself and DALL·E...";
 
