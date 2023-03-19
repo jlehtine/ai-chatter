@@ -74,7 +74,8 @@ chat app like AI Chatter.
 6. Open _Project settings_ and check _Show appsscript.json_.
 
 7. Copy and paste compiled application code from `appsscript/AIChatter.js` to
-   Apps Script project editor into `Code.gs` (or similar).
+   Apps Script project editor into `Code.gs` (or similar) and rename it to
+   `AIChatter.gs`.
 
 8. Copy and paste `appsscript/appsscript.json` content to Apps Script editor
    into `appsscript.json` (or just add the property `chat: {}`).
