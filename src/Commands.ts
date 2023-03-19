@@ -379,7 +379,12 @@ function commandShow(arg: string | undefined, message: GoogleChat.Message): Goog
 
 function quoteShownValue(property: string, value: string) {
     if (JSON_STRING_PROPS.includes(property)) {
-        return value.replaceAll("`", "\\u0060").replaceAll("\n", "\\n").replaceAll("\r", "\\r");
+        return value
+            .replaceAll("\n", "\\n")
+            .replaceAll("\r", "\\r")
+            .replaceAll("`", "\\u0060")
+            .replaceAll("*", "\\u002a")
+            .replaceAll("_", "\\u005f");
     } else {
         return value;
     }
