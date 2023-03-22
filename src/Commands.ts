@@ -231,7 +231,7 @@ function getChatAppName(): string {
  * Command "/image"
  */
 function commandImage(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
-    const match = arg ? arg.match(/^(?:n=(\d+)\s+)?(.*$)/) : undefined;
+    const match = arg ? arg.match(/^(?:n=(\d+)\s+)?(.*$)/s) : undefined;
     if (match) {
         const nStr = match[1];
         const prompt = match[2]?.trim();
