@@ -53,7 +53,7 @@ const DEFAULT_HELP_TEXT =
     "Commands:\n" +
     "  /help                    show this help text\n" +
     "  /intro                   replay the chat app introduction\n" +
-    "  /image [n=N] [size, e.g. 256x256] <prompt>  create an image based on the prompt\n" +
+    "  /image [n=N] [size] <prompt>  create an image based on the prompt\n" +
     "  /again                   regenerate the last chat response or image\n" +
     "  /history [clear]         show or clear chat history\n" +
     "<admin-commands>" +
