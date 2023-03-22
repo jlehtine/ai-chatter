@@ -16,9 +16,15 @@ export interface ChatHistory {
 /** One message in a chat history */
 export interface ChatHistoryMessage {
     time: MillisSinceEpoch;
-    user: string;
+    role: ChatHistoryMessageRole;
     text: string;
 }
+
+/** Whether a chat message was produced by a user or by the assistant (i.e. chat completion) */
+export type ChatHistoryMessageRole = typeof ROLE_USER | typeof ROLE_ASSISTANT;
+
+export const ROLE_USER = "user";
+export const ROLE_ASSISTANT = "assistant";
 
 export interface ChatHistoryImageCommand {
     time: MillisSinceEpoch;
@@ -129,7 +135,7 @@ function getHistoryKey(history: ChatHistory): string {
 function toChatHistoryMessage(message: GoogleChat.Message): ChatHistoryMessage {
     return {
         time: millisNow(),
-        user: message.sender.displayName,
+        role: "user",
         text: message.argumentText ?? message.text,
     };
 }

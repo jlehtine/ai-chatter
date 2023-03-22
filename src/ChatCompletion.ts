@@ -1,5 +1,5 @@
 import { ChatError } from "./Errors";
-import { ChatHistoryMessage } from "./History";
+import { ChatHistoryMessage, ROLE_ASSISTANT, ROLE_USER } from "./History";
 import { getBooleanProperty, getNumberProperty, getJSONProperty, getStringProperty } from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
@@ -60,9 +60,6 @@ class ChatCompletionError extends ChatError {
     }
 }
 
-/** User name used for the assistant in chat history */
-export const USER_ASSISTANT = "__assistant__";
-
 /** Property key for the initialization sequence of a chat */
 export const PROP_CHAT_COMPLETION_INIT = "CHAT_COMPLETION_INIT";
 
@@ -77,7 +74,7 @@ const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
  * @param skipInit whether to skip the chat initialization sequence (default is false)
  */
 export function requestSimpleCompletion(prompt: string, user?: string, skipInit = false): GoogleChat.ResponseMessage {
-    return requestChatCompletion([{ time: millisNow(), user: "User", text: prompt }], user, skipInit);
+    return requestChatCompletion([{ time: millisNow(), role: ROLE_USER, text: prompt }], user, skipInit);
 }
 
 /**
@@ -158,7 +155,7 @@ function requestNativeChatCompletion(
             }
             responseMessage = {
                 time: millisNow(),
-                user: USER_ASSISTANT,
+                role: ROLE_ASSISTANT,
                 text: response.choices[0].message.content.trim(),
             };
             messages.push(responseMessage);
@@ -250,7 +247,7 @@ function toChatCompletionMessages(messages: ChatHistoryMessage[], skipInit: bool
  */
 function toChatCompletionMessage(message: ChatHistoryMessage): ChatCompletionMessage {
     return {
-        role: message.user === USER_ASSISTANT ? "assistant" : "user",
+        role: message.role,
         content: message.text,
     };
 }

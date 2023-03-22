@@ -3,11 +3,10 @@ import {
     PROP_CHAT_COMPLETION_INIT,
     requestChatCompletion,
     requestSimpleCompletion,
-    USER_ASSISTANT,
 } from "./ChatCompletion";
 import { ChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
-import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
+import { getHistory, HISTORY_PREFIX, ROLE_ASSISTANT, saveHistory } from "./History";
 import { requestImageGeneration, supportedImageSizes } from "./Image";
 import { checkModeration } from "./Moderation";
 import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
@@ -311,7 +310,7 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
     }
 
     // Otherwise remove the last message from history, if it was an assistant response
-    if (history.messages.length > 0 && history.messages[history.messages.length - 1].user === USER_ASSISTANT) {
+    if (history.messages.length > 0 && history.messages[history.messages.length - 1].role === ROLE_ASSISTANT) {
         history.messages.splice(history.messages.length - 1, 1);
     }
 
@@ -339,9 +338,9 @@ function commandHistory(arg: string | undefined, message: GoogleChat.Message): G
         history.messages.length === 0
             ? "Chat history is empty"
             : "*Chat history:*" +
-                  history.messages.map(
-                      (m) => "\n\n_" + (m.user === USER_ASSISTANT ? "Assistant" : m.user) + ":_\n" + m.text
-                  )
+                  history.messages
+                      .map((m) => "\n\n_" + (m.role === ROLE_ASSISTANT ? "Assistant" : "User") + ":_\n" + m.text)
+                      .join("")
     );
 }
 
