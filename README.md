@@ -8,6 +8,7 @@ without any additional cloud services.
 ## Contents
 
 - [Limitations](#limitations)
+- [Security and privacy](#security-and-privacy)
 - [Build](#build)
 - [Deploy](#deploy)
 - [Configuration](#configuration)
@@ -20,6 +21,33 @@ This implementation is not suitable for heavy use because it relies on Google
 Apps Script properties for storing chat history data. The script properties are
 not designed for storing such quickly changing information but they made it
 possible to implement the chat history without using any additional services.
+
+Definitely DO NOT deploy this implementation as an external public chat app
+because the implementation does not have any safeguards for such usage.
+
+## Security and privacy
+
+Anyone having access to the deployed chat app can send chat completion and image
+generation requests to OpenAI API using the configured API key. It is possible
+to deploy the chat app only to specific Google users or user groups for test
+use. The chat app has also been used for an organization wide internal
+deployment in a small organization.
+
+The implementation will send chat completion and image generation requests to
+OpenAI API. The requests will also include the numeric Google user identifier
+(e.g. `users/<digits>`) of the user making the request. Additionally, the
+current chat history including the timestamps and chat messages is stored as a
+script property in Google Apps Script. Anyone participating the chat can request
+the history to be shown using the `/history` command.
+
+Textual content received from the user as input or received from the chat
+completion API as output is sent to the OpenAI moderation API before being used.
+If the content is flagged by the moderation API then the content will not be
+used and an error is shown instead.
+
+Ensure that proper terms of use and privacy policy are being applied if you make
+the chat app accessible to others. Ensure you comply with the
+[OpenAI terms of use](https://openai.com/policies/terms-of-use).
 
 ## Build
 
@@ -270,7 +298,13 @@ them over the chat interface in a one-to-one chat with the app.
 
 ## Usage
 
-TODO
+To communicate with the chat app, go to
+[Google Chat](https://mail.google.com/chat/) and start a new chat with the app
+by clicking the plus icon and then searching for apps by name.
+
+The chat app can also be added to group chats and spaces. However, in that case
+it will only receive the messages explicitly mentioning the app using
+`@<chat app name>`.
 
 ### User commands
 
