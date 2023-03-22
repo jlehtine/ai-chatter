@@ -1,16 +1,14 @@
 import {
     ChatCompletionInitialization,
-    getChatCompletionText,
     PROP_CHAT_COMPLETION_INIT,
     requestChatCompletion,
-    requestNativeChatCompletion,
     requestSimpleCompletion,
     USER_ASSISTANT,
 } from "./ChatCompletion";
 import { ChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
 import { getHistory, HISTORY_PREFIX, saveHistory } from "./History";
-import { requestImageGeneration } from "./Image";
+import { requestImageGeneration, supportedImageSizes } from "./Image";
 import { checkModeration } from "./Moderation";
 import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
 import {
@@ -22,7 +20,7 @@ import {
     setStringProperty,
 } from "./Properties";
 import { millisNow } from "./Timestamp";
-import { asStringOpt } from "./typeutil";
+import { asString, asStringOpt, requireNotNull } from "./typeutil";
 
 const COMMAND_PREFIX = "/";
 const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/s;
@@ -55,7 +53,7 @@ const DEFAULT_HELP_TEXT =
     "Commands:\n" +
     "  /help                    show this help text\n" +
     "  /intro                   replay the chat app introduction\n" +
-    "  /image [n=N] <prompt>    create an image based on the prompt\n" +
+    "  /image [n=N] [size, e.g. 256x256] <prompt>  create an image based on the prompt\n" +
     "  /again                   regenerate the last chat response or image\n" +
     "  /history [clear]         show or clear chat history\n" +
     "<admin-commands>" +
@@ -231,43 +229,66 @@ function getChatAppName(): string {
  * Command "/image"
  */
 function commandImage(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
-    const match = arg ? arg.match(/^(?:n=(\d+)\s+)?(.*$)/s) : undefined;
-    if (match) {
-        const nStr = match[1];
-        const prompt = match[2]?.trim();
-        if (arg && prompt) {
-            // Moderation check on prompt
-            checkModeration(prompt);
+    let prompt = arg;
 
-            // Store latest image command for repeat
-            const history = getHistory(message, true);
-            history.imageCommand = {
-                time: millisNow(),
-                arg: arg,
-            };
-            saveHistory(history);
+    // Parse number of images anywhere within the prompt
+    let n = undefined;
+    const matchN = prompt ? prompt.match(/^(.*?\s|)(?:n=(\d+))(\s.*|)$/s) : undefined;
+    if (matchN) {
+        n = Number(matchN[2]);
+        prompt = matchN[1] + matchN[3];
+    }
 
-            // If so configured, translate the image prompt using chat completion
-            let finalPrompt = prompt;
-            const imagePromptTranslation = asStringOpt(getJSONProperty(PROP_IMAGE_PROMPT_TRANSLATION));
-            if (imagePromptTranslation !== undefined) {
-                try {
-                    const chatPrompt = imagePromptTranslation.replace("<image prompt>", prompt);
-                    const response = requestNativeChatCompletion(
-                        [{ time: millisNow(), user: "User", text: chatPrompt }],
-                        message.sender.name,
-                        true
-                    );
-                    finalPrompt = getChatCompletionText(response);
-                } catch (err) {
-                    // Log the error and just ignore it to continue with the original prompt
-                    logError(err);
-                }
-            }
-
-            // Image generation
-            return requestImageGeneration(finalPrompt, message.sender.name, nStr ? Number(nStr) : undefined);
+    // Parse image size anywhere within the prompt
+    let size = undefined;
+    const matchSize = prompt ? prompt.match(/^(.*?\s|)(?:(\d+)[xX](\d+))(\s.*|)$/s) : undefined;
+    if (matchSize) {
+        const width = Number(matchSize[2]);
+        const height = Number(matchSize[3]);
+        prompt = matchSize[1] + matchSize[4];
+        const matchingImageSizes = supportedImageSizes.filter((s) => {
+            const m = requireNotNull(s.match(/^(\d+)[xX](\d+)$/));
+            const w = Number(m[1]);
+            const h = Number(m[2]);
+            return w >= width && h >= height;
+        });
+        if (matchingImageSizes.length > 0) {
+            size = matchingImageSizes[0];
+        } else {
+            size = supportedImageSizes[supportedImageSizes.length - 1];
         }
+    }
+
+    // Check that we have some prompt
+    prompt = prompt?.trim();
+    if (arg && prompt) {
+        // Moderation check on prompt
+        checkModeration(prompt);
+
+        // Store latest image command for repeat
+        const history = getHistory(message, true);
+        history.imageCommand = {
+            time: millisNow(),
+            arg: arg,
+        };
+        saveHistory(history);
+
+        // If so configured, translate the image prompt using chat completion
+        let finalPrompt = prompt;
+        const imagePromptTranslation = asStringOpt(getJSONProperty(PROP_IMAGE_PROMPT_TRANSLATION));
+        if (imagePromptTranslation !== undefined) {
+            try {
+                const chatPrompt = imagePromptTranslation.replace("<image prompt>", prompt);
+                const response = requestSimpleCompletion(chatPrompt, message.sender.name, true);
+                finalPrompt = asString(response.text);
+            } catch (err) {
+                // Log the error and just ignore it to continue with the original prompt
+                logError(err);
+            }
+        }
+
+        // Image generation
+        return requestImageGeneration(finalPrompt, message.sender.name, n, size);
     }
     throw new CommandError(INVALID_ARGS_MSG);
 }

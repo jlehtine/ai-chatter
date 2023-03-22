@@ -15,6 +15,9 @@ interface ImageGenerationRequest {
 /** Allowed image sizes */
 type ImageSize = "256x256" | "512x512" | "1024x1024";
 
+/** Allowed image sizes as data */
+export const supportedImageSizes: ImageSize[] = ["256x256", "512x512", "1024x1024"];
+
 /** Image generation API response */
 interface ImageGenerationResponse {
     created: number;

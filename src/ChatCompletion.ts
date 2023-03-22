@@ -121,7 +121,7 @@ export function requestChatCompletion(
     return chatResponse;
 }
 
-export function requestNativeChatCompletion(
+function requestNativeChatCompletion(
     messages: ChatHistoryMessage[],
     user?: string,
     skipInit = false
@@ -178,7 +178,7 @@ export function requestNativeChatCompletion(
  * @param response response object
  * @returns chat completion response text
  */
-export function getChatCompletionText(response: ChatCompletionResponse): string {
+function getChatCompletionText(response: ChatCompletionResponse): string {
     return response.choices[0].message.content.trim();
 }
 
