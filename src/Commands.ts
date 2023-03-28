@@ -310,9 +310,14 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
         return commandImage(history.imageCommand.arg, message);
     }
 
-    // Otherwise remove the last message from history, if it was an assistant response
-    if (history.messages.length > 0 && history.messages[history.messages.length - 1].role === ROLE_ASSISTANT) {
+    // Otherwise remove the last message from history, as long as it was an assistant response
+    while (history.messages.length > 0 && history.messages[history.messages.length - 1].role === ROLE_ASSISTANT) {
         history.messages.splice(history.messages.length - 1, 1);
+    }
+
+    // Check that there is some history to repeat
+    if (history.messages.length < 1) {
+        throw new CommandError("No chat history available to be repeated.");
     }
 
     // Request new chat completion
