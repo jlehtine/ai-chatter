@@ -33,12 +33,12 @@ to deploy the chat app only to specific Google users or user groups for test
 use. The chat app has also been used for an organization wide internal
 deployment in a small organization.
 
-The implementation will send chat completion and image generation requests to
-OpenAI API. The requests will also include the numeric Google user identifier
-(e.g. `users/<digits>`) of the user making the request. Additionally, the
-current chat history including the timestamps and chat messages is stored as a
-script property in Google Apps Script. Anyone participating the chat can request
-the history to be shown using the `/history` command.
+The implementation sends chat completion and image generation requests to OpenAI
+API. The requests also include the numeric Google user identifier (e.g.
+`users/<digits>`) of the user making the request. Additionally, the current chat
+history including the timestamps and chat messages is stored as a script
+property in Google Apps Script. Anyone participating the chat can view the
+history using the `/history` command.
 
 Textual content received from the user as input or received from the chat
 completion API as output is sent to the OpenAI moderation API before being used.
@@ -51,7 +51,7 @@ the chat app accessible to others. Ensure you comply with the
 
 ## Build
 
-To build AI Chatter, you will need Node.js (tested with major version 18).
+To build AI Chatter, you will need Node.js (developed with major version 18).
 
 First install the required Node modules once with NPM.
 
@@ -169,6 +169,12 @@ Google Workspaces domain then you have to specifically allow the chat app
    previous step as the search string and make it trusted.
 
 ## Configuration
+
+This chat app is configured using script properties.
+
+Please note that also chat histories are stored as script properties. These
+properties have a property name with prefix `_history` and they are used as
+runtime data, not for configuration.
 
 ### Sensitive properties
 
@@ -298,17 +304,68 @@ them over the chat interface in a one-to-one chat with the app.
 
 ## Usage
 
-To communicate with the chat app, go to
+To communicate with the deployed chat app, go to
 [Google Chat](https://mail.google.com/chat/) and start a new chat with the app
 by clicking the plus icon and then searching for apps by name.
 
 The chat app can also be added to group chats and spaces. However, in that case
-it will only receive the messages explicitly mentioning the app using
+it will only receive the messages by explicitly mentioning the app using
 `@<chat app name>`.
 
 ### User commands
 
+The following user commands can be used by any user having access to the chat
+app.
+
+- `/help`  
+  Show the help on commands.
+
+- `/intro`  
+  Replay the chat app introduction normally displayed when the chat app is
+  invited to a new discussion.
+
+- `/image [n=<number of images>] [<size, e.g. 512x512>] <prompt>`  
+  Request an image or images to be generated based on the specified _prompt_.
+  The command parameters may specify the number of images to be generated using
+  notation `n=<number of images>`, e.g. `n=3`. Also the size of the generated
+  image(s) can be specified using notation `512x512`. The specified size is
+  rounded to one of the image sizes supported by the OpenAI API: 256x256,
+  512x512 or 1024x1024. Also see the property `IMAGE_PROMPT_TRANSLATION` to
+  translate or transform provided image prompts.
+
+- `/again`  
+  Repeat the previous chat completion request or image generation request. The
+  generated responses have a lot of random variation so this is an easy way to
+  get an alternative response. Also, if you experience timeout errors then this
+  command can be used for repeating the timeouted request.
+
+- `/history [clear]`  
+  Show or clear chat history which is the basis for chat completion responses.
+
 ### Administrative commands
+
+The following administrative commands can be used by administrators specified
+using the `ADMINS` property. These commands can only be used in a one-to-one
+chat with the chat app.
+
+- `/init [<initialization>]`  
+  Set global chat initialization prompt which will be included at the start of
+  each discussion but is not visible to the users. It can be used to instruct
+  the language model to behave in a certain way. An example initialization might
+  be: _"In this chat you are a polite research assistant helping scientists and
+  providing them with scientific citations."_ This is a kind of "programming"
+  for the language model. If the command is given without any initialization
+  prompt then any existing initialization is cleared.
+
+- `/show [<property...>]`  
+  Show the values of visible configuration properties or values of the specified
+  properties, if any are specified. This command does not show the properties
+  storing the API key or chat histories.
+
+- `/set <property> <value>`  
+  Sets the specified configuration property to the specified value. This command
+  refuses to set the sensitive properties `OPENAI_API_KEY` and `ADMINS` and
+  properties storing chat history.
 
 ## Development
 
@@ -323,8 +380,8 @@ and enable Google Apps Script API if it is not enabled.
 
 Now login to Google Apps Script with Clasp. Depending on your Google Workspace
 security settings, you might first have to add Clasp as a trusted application.
-The stored login token will expire periodically (daily) and has to be repeated
-after expiration.
+The stored login token may expire periodically requiring a new login before
+other actions are possible.
 
 ```shell
 npx clasp login
