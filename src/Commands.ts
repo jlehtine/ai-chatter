@@ -1,12 +1,14 @@
 import {
     ChatCompletionInitialization,
+    getInstructions,
     PROP_CHAT_COMPLETION_INIT,
     requestChatCompletion,
     requestSimpleCompletion,
+    setInstructions,
 } from "./ChatCompletion";
 import { ChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
-import { getHistory, HISTORY_PREFIX, ROLE_ASSISTANT, saveHistory } from "./History";
+import { getHistory, ROLE_ASSISTANT, saveHistory } from "./History";
 import { requestImageGeneration, supportedImageSizes } from "./Image";
 import { checkModeration } from "./Moderation";
 import { PROP_OPENAI_API_KEY } from "./OpenAIAPI";
@@ -66,7 +68,8 @@ const HELP_TEXT_ADMIN =
     "Admin commands (only available to admins in a one-to-one chat):\n" +
     "  /init [<initialization>] set or clear chat initialization\n" +
     "  /show [<property>...]    show all or specified properties\n" +
-    "  /set <property> <value>  set the specified property\n";
+    "  /set <property> [<value>]\n" +
+    "                           set or clear the specified property\n";
 
 const INVALID_ARGS_MSG = "Invalid command arguments";
 
@@ -190,7 +193,7 @@ export function commandIntro(): GoogleChat.ResponseMessage {
         const prompt = getIntroductionPrompt();
         if (prompt && prompt !== "none") {
             checkModeration(prompt);
-            const completionResponse = requestSimpleCompletion(prompt, undefined, true);
+            const completionResponse = requestSimpleCompletion(prompt);
             if (completionResponse.text) {
                 GoogleChat.addDecoratedTextCard(response, "completion", prompt, "\n" + completionResponse.text);
             }
@@ -283,7 +286,7 @@ function commandImage(arg: string | undefined, message: GoogleChat.Message): Goo
         if (imagePromptTranslation !== undefined) {
             try {
                 const chatPrompt = imagePromptTranslation.replace("<image prompt>", prompt);
-                const response = requestSimpleCompletion(chatPrompt, message.sender.name, true);
+                const response = requestSimpleCompletion(chatPrompt, message.sender.name);
                 finalPrompt = asString(response.text);
             } catch (err) {
                 // Log the error and just ignore it to continue with the original prompt
@@ -325,7 +328,7 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
     }
 
     // Request new chat completion
-    const completionResponse = requestChatCompletion(history.messages, message.sender.name, history.instructions);
+    const completionResponse = requestChatCompletion(history.messages, message.sender.name, message.space.name);
 
     // Save history with new response
     saveHistory(history);
@@ -337,25 +340,23 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
  * Command "/instruct"
  */
 function commandInstruct(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
-    const history = getHistory(message, true);
     let resp;
 
     // Set intructions
-    const instructions = arg?.trim();
+    let instructions = arg?.trim();
     if (instructions) {
         checkModeration(instructions);
-        history.instructions = instructions;
-        resp = "Instructions have been set for this chat:\n" + instructions;
+        resp = "Instructions have been set for this space:\n" + instructions;
     }
 
     // Or clear instructions
     else {
-        delete history.instructions;
-        resp = "Instructions have been cleared for this chat.";
+        instructions = undefined;
+        resp = "Instructions have been cleared for this space.";
     }
 
-    // Save history with updated instructions
-    saveHistory(history);
+    // Store updated instructions
+    setInstructions(message.space.name, instructions);
 
     return GoogleChat.textResponse(resp);
 }
@@ -365,6 +366,7 @@ function commandInstruct(arg: string | undefined, message: GoogleChat.Message): 
  */
 function commandHistory(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
     const history = getHistory(message, true);
+    const instructions = getInstructions(message.space.name);
     if (typeof arg === "string" && arg.trim() === "clear") {
         history.messages = [];
         saveHistory(history);
@@ -372,7 +374,7 @@ function commandHistory(arg: string | undefined, message: GoogleChat.Message): G
         throw new CommandError(INVALID_ARGS_MSG);
     }
     return GoogleChat.textResponse(
-        (history.instructions !== undefined ? "*Instructions:*\n" + history.instructions + "\n\n" : "") +
+        (instructions !== undefined ? "*Instructions:*\n" + instructions + "\n\n" : "") +
             (history.messages.length === 0
                 ? "Chat history is empty"
                 : "*Chat history:*" +
@@ -477,7 +479,7 @@ function commandSet(arg: string | undefined, message: GoogleChat.Message): Googl
     }
     if (match) {
         const key = match[1];
-        if (key === PROP_OPENAI_API_KEY || key === PROP_ADMINS || key.startsWith(HISTORY_PREFIX)) {
+        if (key === PROP_OPENAI_API_KEY || key === PROP_ADMINS || key.startsWith("_")) {
             throw new UnauthorizedError("This property can not be set via chat");
         }
         const value = match.length > 2 && match[2] ? match[2].trim() : undefined;

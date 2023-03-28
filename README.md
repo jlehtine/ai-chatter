@@ -172,9 +172,10 @@ Google Workspaces domain then you have to specifically allow the chat app
 
 This chat app is configured using script properties.
 
-Please note that also chat histories are stored as script properties. These
-properties have a property name with prefix `_history` and they are used as
-runtime data, not for configuration.
+Please note that also chat histories and per-space language model instsructions
+are stored as script properties. These properties have a property name with
+prefix `_history` or `_instructions` and they are used as runtime data, not for
+configuration.
 
 ### Sensitive properties
 
@@ -339,13 +340,12 @@ app.
   get an alternative response. Also, if you experience timeout errors then this
   command can be used for repeating the timeouted request.
 
-- `/instruct <instructions>`  
-  Set or clear per-chat instructions given to the language model for this chat.
-  The specified instructions are prefixed to any chat history in this chat. This
-  can be used to control the language model behaviour. For example: _"In this
-  chat you will only respond with binary ones and zeros."_ The specified
-  instructions will replace any existing instructions for this chat. If no
-  instructions are specified then any existing instructions are cleared.
+- `/instruct [<instructions>]`  
+  Set or clear instructions given to the language model in this space. This can
+  be used to control the language model behaviour. For example: _"Reply with
+  binary ones and zeros only."_ The specified instructions will replace any
+  existing instructions for this space. If no instructions are specified then
+  any existing instructions are cleared.
 
 - `/history [clear]`  
   Show or clear chat history which is the basis for chat completion responses.
@@ -370,10 +370,11 @@ chat with the chat app.
   properties, if any are specified. This command does not show the properties
   storing the API key or chat histories.
 
-- `/set <property> <value>`  
+- `/set <property> [<value>]`  
   Sets the specified configuration property to the specified value. This command
   refuses to set the sensitive properties `OPENAI_API_KEY` and `ADMINS` and
-  properties storing chat history.
+  properties storing chat history. If no value is specified then the property is
+  cleared.
 
 ## Development
 

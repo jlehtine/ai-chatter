@@ -3,14 +3,13 @@ import * as GoogleChat from "./GoogleChat";
 import { MillisSinceEpoch, Millis, millisNow, minutesToMillis, differenceMillis } from "./Timestamp";
 import { CausedError, logError } from "./Errors";
 
-export const HISTORY_PREFIX = "_history/";
+const HISTORY_PREFIX = "_history/";
 
 /** History for a chat or a chat thread */
 export interface ChatHistory {
     updated: MillisSinceEpoch;
     space: string;
     thread?: string;
-    instructions?: string;
     messages: ChatHistoryMessage[];
     imageCommand?: ChatHistoryImageCommand;
 }
@@ -34,10 +33,16 @@ export interface ChatHistoryImageCommand {
 }
 
 function isChatHistory(obj: unknown): obj is ChatHistory {
+    const updatedType = typeof (obj as ChatHistory)?.updated;
     const spaceType = typeof (obj as ChatHistory)?.space;
     const threadType = typeof (obj as ChatHistory)?.thread;
     const messages = (obj as ChatHistory)?.messages;
-    return spaceType === "string" && (threadType === "string" || threadType === "undefined") && Array.isArray(messages);
+    return (
+        updatedType === "number" &&
+        spaceType === "string" &&
+        (threadType === "string" || threadType === "undefined") &&
+        Array.isArray(messages)
+    );
 }
 
 /**
@@ -173,7 +178,6 @@ function pruneHistories(): void {
             if (isChatHistory(history)) {
                 const messages = history.messages;
                 if (
-                    history.instructions === undefined &&
                     (messages.length === 0 ||
                         differenceMillis(now, messages[messages.length - 1].time) > historyMillis) &&
                     (!history.imageCommand || differenceMillis(now, history.imageCommand.time) > historyMillis)

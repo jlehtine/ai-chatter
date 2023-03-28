@@ -1,10 +1,16 @@
 import { ChatError } from "./Errors";
 import { ChatHistoryMessage, ROLE_ASSISTANT, ROLE_USER } from "./History";
-import { getBooleanProperty, getNumberProperty, getJSONProperty, getStringProperty } from "./Properties";
+import {
+    getBooleanProperty,
+    getNumberProperty,
+    getJSONProperty,
+    getStringProperty,
+    setJSONProperty,
+} from "./Properties";
 import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
 import { checkModeration } from "./Moderation";
-import { millisNow } from "./Timestamp";
+import { millisNow, MillisSinceEpoch } from "./Timestamp";
 
 // Chat completion API interface
 
@@ -60,21 +66,38 @@ class ChatCompletionError extends ChatError {
     }
 }
 
+interface InstructionsProp {
+    instructions: { [key: string]: InstructionsConf };
+}
+
+interface InstructionsConf {
+    used: MillisSinceEpoch;
+    content: string;
+}
+
+function isInstructionsProp(obj: unknown): obj is InstructionsProp {
+    return typeof (obj as InstructionsProp)?.instructions === "object";
+}
+
 /** Property key for the initialization sequence of a chat */
 export const PROP_CHAT_COMPLETION_INIT = "CHAT_COMPLETION_INIT";
 
 /** Default initialization sequence for a chat */
 const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
 
+/** Property key for instructions mapped by space */
+const PROP_INSTRUCTIONS = "_instructions";
+
+const DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
+
 /**
  * Requests a simple completion for the specified prompt.
  *
  * @param prompt prompt for completion
  * @param user user identification
- * @param skipInit whether to skip the chat initialization sequence (default is false)
  */
-export function requestSimpleCompletion(prompt: string, user?: string, skipInit = false): GoogleChat.ResponseMessage {
-    return requestChatCompletion([{ time: millisNow(), role: ROLE_USER, text: prompt }], user, undefined, skipInit);
+export function requestSimpleCompletion(prompt: string, user?: string): GoogleChat.ResponseMessage {
+    return requestChatCompletion([{ time: millisNow(), role: ROLE_USER, text: prompt }], user, undefined, true);
 }
 
 /**
@@ -90,11 +113,11 @@ export function requestSimpleCompletion(prompt: string, user?: string, skipInit 
 export function requestChatCompletion(
     messages: ChatHistoryMessage[],
     user?: string,
-    instructions?: string,
+    space?: string,
     skipInit = false
 ): GoogleChat.ResponseMessage {
     // Make native chat completion request
-    const response = requestNativeChatCompletion(messages, user, instructions, skipInit);
+    const response = requestNativeChatCompletion(messages, user, space, skipInit);
     const responseText = getChatCompletionText(response);
 
     // Moderate output
@@ -123,13 +146,13 @@ export function requestChatCompletion(
 function requestNativeChatCompletion(
     messages: ChatHistoryMessage[],
     user?: string,
-    instructions?: string,
+    space?: string,
     skipInit = false
 ): ChatCompletionResponse {
     // Prepare chat completion request
     const url = getChatCompletionURL();
     const apiKey = getOpenAIAPIKey();
-    const request = createChatCompletionRequest(messages, user, instructions, skipInit);
+    const request = createChatCompletionRequest(messages, user, space, skipInit);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -188,12 +211,21 @@ function getChatCompletionText(response: ChatCompletionResponse): string {
 function createChatCompletionRequest(
     messages: ChatHistoryMessage[],
     user?: string,
-    instructions?: string,
+    space?: string,
     skipInit = false
 ): ChatCompletionRequest {
+    // Find instructions for this space, unless all initialization skipped
+    const instr = skipInit || space === undefined ? undefined : getInstructions(space);
+    const instrMsgs = instr === undefined ? [] : [toChatCompletionUserMessage(instr)];
+
+    // Construct an array of chat completion messages: initialization, instructions and chat history
+    const ccmsgs = (skipInit ? [] : getChatCompletionInit())
+        .concat(instrMsgs)
+        .concat(toChatCompletionMessages(messages));
+
     return {
         model: getChatCompletionModel(),
-        messages: toChatCompletionMessages(messages, instructions, skipInit),
+        messages: ccmsgs,
         user: user,
     };
 }
@@ -242,14 +274,8 @@ function isValidInit(obj: unknown): obj is ChatCompletionMessage[] {
 /**
  * Converts a chat history into an array of chat messages suitable for a completion request.
  */
-function toChatCompletionMessages(
-    messages: ChatHistoryMessage[],
-    instructions?: string,
-    skipInit = false
-): ChatCompletionMessage[] {
-    return (skipInit ? [] : getChatCompletionInit())
-        .concat(instructions === undefined ? [] : [{ role: "user", content: instructions }])
-        .concat(messages.map((m) => toChatCompletionMessage(m)));
+function toChatCompletionMessages(messages: ChatHistoryMessage[]): ChatCompletionMessage[] {
+    return messages.map((m) => toChatCompletionMessage(m));
 }
 
 /**
@@ -259,6 +285,16 @@ function toChatCompletionMessage(message: ChatHistoryMessage): ChatCompletionMes
     return {
         role: message.role,
         content: message.text,
+    };
+}
+
+/***
+ * Converts textual content into a user message for chat completion.
+ */
+function toChatCompletionUserMessage(content: string): ChatCompletionMessage {
+    return {
+        role: "user",
+        content: content,
     };
 }
 
@@ -290,6 +326,46 @@ function toChatCompletionResponse(response: GoogleAppsScript.URL_Fetch.HTTPRespo
 function isOkResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): boolean {
     const code = response.getResponseCode();
     return code >= 200 && code < 300;
+}
+
+/**
+ * Returns the current instructions for the specified space.
+ */
+export function getInstructions(space: string): string | undefined {
+    const instrProp = getInstructionsProp();
+    const instrConf = instrProp.instructions[space];
+    if (instrConf) {
+        const now = millisNow();
+        if (now - instrConf.used > DAY_IN_MILLIS) {
+            instrConf.used = now;
+            setJSONProperty(PROP_INSTRUCTIONS, instrProp);
+        }
+        return instrConf.content;
+    } else {
+        return undefined;
+    }
+}
+
+/**
+ * Sets or clears instructions for the specified space.
+ */
+export function setInstructions(space: string, instructions?: string): void {
+    const instrProp = getInstructionsProp();
+    if (instructions !== undefined) {
+        instrProp.instructions[space] = { used: millisNow(), content: instructions };
+    } else {
+        delete instrProp.instructions[space];
+    }
+    setJSONProperty(PROP_INSTRUCTIONS, instrProp);
+}
+
+function getInstructionsProp(): InstructionsProp {
+    const instrProp = getJSONProperty(PROP_INSTRUCTIONS);
+    if (isInstructionsProp(instrProp)) {
+        return instrProp;
+    } else {
+        return { instructions: {} };
+    }
 }
 
 /**
