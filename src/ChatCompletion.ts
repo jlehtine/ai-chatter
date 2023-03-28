@@ -74,7 +74,7 @@ const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
  * @param skipInit whether to skip the chat initialization sequence (default is false)
  */
 export function requestSimpleCompletion(prompt: string, user?: string, skipInit = false): GoogleChat.ResponseMessage {
-    return requestChatCompletion([{ time: millisNow(), role: ROLE_USER, text: prompt }], user, skipInit);
+    return requestChatCompletion([{ time: millisNow(), role: ROLE_USER, text: prompt }], user, undefined, skipInit);
 }
 
 /**
@@ -84,15 +84,17 @@ export function requestSimpleCompletion(prompt: string, user?: string, skipInit 
  *
  * @param messages chat messages to complement
  * @param user user identification
+ * @param instructions instructions for AI in this chat
  * @param skipInit whether to skip the chat initialization sequence (default is false)
  */
 export function requestChatCompletion(
     messages: ChatHistoryMessage[],
     user?: string,
+    instructions?: string,
     skipInit = false
 ): GoogleChat.ResponseMessage {
     // Make native chat completion request
-    const response = requestNativeChatCompletion(messages, user, skipInit);
+    const response = requestNativeChatCompletion(messages, user, instructions, skipInit);
     const responseText = getChatCompletionText(response);
 
     // Moderate output
@@ -121,12 +123,13 @@ export function requestChatCompletion(
 function requestNativeChatCompletion(
     messages: ChatHistoryMessage[],
     user?: string,
+    instructions?: string,
     skipInit = false
 ): ChatCompletionResponse {
     // Prepare chat completion request
     const url = getChatCompletionURL();
     const apiKey = getOpenAIAPIKey();
-    const request = createChatCompletionRequest(messages, user, skipInit);
+    const request = createChatCompletionRequest(messages, user, instructions, skipInit);
     const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
     const params = {
         method: method,
@@ -184,12 +187,13 @@ function getChatCompletionText(response: ChatCompletionResponse): string {
  */
 function createChatCompletionRequest(
     messages: ChatHistoryMessage[],
-    user: string | undefined,
-    skipInit: boolean
+    user?: string,
+    instructions?: string,
+    skipInit = false
 ): ChatCompletionRequest {
     return {
         model: getChatCompletionModel(),
-        messages: toChatCompletionMessages(messages, skipInit),
+        messages: toChatCompletionMessages(messages, instructions, skipInit),
         user: user,
     };
 }
@@ -238,8 +242,14 @@ function isValidInit(obj: unknown): obj is ChatCompletionMessage[] {
 /**
  * Converts a chat history into an array of chat messages suitable for a completion request.
  */
-function toChatCompletionMessages(messages: ChatHistoryMessage[], skipInit: boolean): ChatCompletionMessage[] {
-    return (skipInit ? [] : getChatCompletionInit()).concat(messages.map((m) => toChatCompletionMessage(m)));
+function toChatCompletionMessages(
+    messages: ChatHistoryMessage[],
+    instructions?: string,
+    skipInit = false
+): ChatCompletionMessage[] {
+    return (skipInit ? [] : getChatCompletionInit())
+        .concat(instructions === undefined ? [] : [{ role: "user", content: instructions }])
+        .concat(messages.map((m) => toChatCompletionMessage(m)));
 }
 
 /**

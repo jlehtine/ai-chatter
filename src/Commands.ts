@@ -55,6 +55,8 @@ const DEFAULT_HELP_TEXT =
     "  /image [n=<number of images>] [<size, e.g. 512x512>] <prompt>\n" +
     "                           create an image based on the prompt\n" +
     "  /again                   regenerate the last chat response or image\n" +
+    "  /instruct [<instructions>]\n" +
+    "                           set or clear AI instructions for this chat\n" +
     "  /history [clear]         show or clear chat history\n" +
     "<admin-commands>" +
     "```";
@@ -109,6 +111,8 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Bo
         return commandImage(arg, event.message);
     } else if (cmd === "again") {
         return commandAgain(arg, event.message);
+    } else if (cmd === "instruct") {
+        return commandInstruct(arg, event.message);
     } else if (cmd === "history") {
         return commandHistory(arg, event.message);
     } else if (cmd === "init") {
@@ -321,12 +325,39 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
     }
 
     // Request new chat completion
-    const completionResponse = requestChatCompletion(history.messages, message.sender.name);
+    const completionResponse = requestChatCompletion(history.messages, message.sender.name, history.instructions);
 
     // Save history with new response
     saveHistory(history);
 
     return completionResponse;
+}
+
+/**
+ * Command "/instruct"
+ */
+function commandInstruct(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
+    const history = getHistory(message, true);
+    let resp;
+
+    // Set intructions
+    const instructions = arg?.trim();
+    if (instructions) {
+        checkModeration(instructions);
+        history.instructions = instructions;
+        resp = "Instructions have been set for this chat:\n" + instructions;
+    }
+
+    // Or clear instructions
+    else {
+        delete history.instructions;
+        resp = "Instructions have been cleared for this chat.";
+    }
+
+    // Save history with updated instructions
+    saveHistory(history);
+
+    return GoogleChat.textResponse(resp);
 }
 
 /**
@@ -341,12 +372,13 @@ function commandHistory(arg: string | undefined, message: GoogleChat.Message): G
         throw new CommandError(INVALID_ARGS_MSG);
     }
     return GoogleChat.textResponse(
-        history.messages.length === 0
-            ? "Chat history is empty"
-            : "*Chat history:*" +
+        (history.instructions !== undefined ? "*Instructions:*\n" + history.instructions + "\n\n" : "") +
+            (history.messages.length === 0
+                ? "Chat history is empty"
+                : "*Chat history:*" +
                   history.messages
                       .map((m) => "\n\n_" + (m.role === ROLE_ASSISTANT ? "Assistant" : "User") + ":_\n" + m.text)
-                      .join("")
+                      .join(""))
     );
 }
 

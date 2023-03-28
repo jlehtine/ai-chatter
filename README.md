@@ -339,6 +339,14 @@ app.
   get an alternative response. Also, if you experience timeout errors then this
   command can be used for repeating the timeouted request.
 
+- `/instruct <instructions>`  
+  Set or clear per-chat instructions given to the language model for this chat.
+  The specified instructions are prefixed to any chat history in this chat. This
+  can be used to control the language model behaviour. For example: _"In this
+  chat you will only respond with binary ones and zeros."_ The specified
+  instructions will replace any existing instructions for this chat. If no
+  instructions are specified then any existing instructions are cleared.
+
 - `/history [clear]`  
   Show or clear chat history which is the basis for chat completion responses.
 
@@ -354,7 +362,7 @@ chat with the chat app.
   the language model to behave in a certain way. An example initialization might
   be: _"In this chat you are a polite research assistant helping scientists and
   providing them with scientific citations."_ This is a kind of "programming"
-  for the language model. If the command is given without any initialization
+  for the language model. If this command is given without any initialization
   prompt then any existing initialization is cleared.
 
 - `/show [<property...>]`  

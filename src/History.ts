@@ -7,8 +7,10 @@ export const HISTORY_PREFIX = "_history/";
 
 /** History for a chat or a chat thread */
 export interface ChatHistory {
+    updated: MillisSinceEpoch;
     space: string;
     thread?: string;
+    instructions?: string;
     messages: ChatHistoryMessage[];
     imageCommand?: ChatHistoryImageCommand;
 }
@@ -43,6 +45,7 @@ function isChatHistory(obj: unknown): obj is ChatHistory {
  */
 function createChatHistory(message: GoogleChat.Message): ChatHistory {
     return {
+        updated: millisNow(),
         space: message.space.name,
         thread: message.space.spaceThreadingState === "UNTHREADED_MESSAGES" ? undefined : message.thread.name,
         messages: [toChatHistoryMessage(message)],
@@ -82,6 +85,7 @@ export function saveHistory(history: ChatHistory) {
     // Prune expired histories
     pruneHistories();
 
+    history.updated = millisNow();
     const historyKey = getHistoryKey(history);
     let saved = false;
     while (!saved) {
@@ -169,6 +173,7 @@ function pruneHistories(): void {
             if (isChatHistory(history)) {
                 const messages = history.messages;
                 if (
+                    history.instructions === undefined &&
                     (messages.length === 0 ||
                         differenceMillis(now, messages[messages.length - 1].time) > historyMillis) &&
                     (!history.imageCommand || differenceMillis(now, history.imageCommand.time) > historyMillis)
