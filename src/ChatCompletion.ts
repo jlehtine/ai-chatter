@@ -134,28 +134,30 @@ export function requestChatCompletion(
     // Generate images if they were included in the response
     const imageSections: CardSection[] = [];
     if (getChatCompletionImages()) {
-        responseText = responseText.replaceAll(/\[\s*DALLE\s*[:\s]\s*([^\]]*)\]/gi, (m, p) => {
-            try {
-                const response = requestNativeImageGeneration(p, undefined, 1, "512x512");
-                response.data.forEach((img) => {
-                    imageSections.push({
-                        header: '"' + p + '"',
-                        widgets: [
-                            {
-                                image: {
-                                    imageUrl: img.url,
+        responseText = responseText
+            .replaceAll(/\[\s*DALLE\s*[:\s]\s*([^\]]*)\]/gi, (m, p) => {
+                try {
+                    const response = requestNativeImageGeneration(p, undefined, 1, "512x512");
+                    response.data.forEach((img) => {
+                        imageSections.push({
+                            header: '"' + p + '"',
+                            widgets: [
+                                {
+                                    image: {
+                                        imageUrl: img.url,
+                                    },
                                 },
-                            },
-                        ],
-                        collapsible: false,
+                            ],
+                            collapsible: false,
+                        });
                     });
-                });
-            } catch (err) {
-                // Log error but continue without images
-                console.error(err);
-            }
-            return "";
-        });
+                } catch (err) {
+                    // Log error but continue without images
+                    console.error(err);
+                }
+                return "";
+            })
+            .trim();
     }
 
     // Format completion result
