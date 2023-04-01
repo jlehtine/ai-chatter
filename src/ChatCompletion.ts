@@ -13,6 +13,7 @@ import { checkModeration } from "./Moderation";
 import { millisNow, MillisSinceEpoch } from "./Timestamp";
 import { requestNativeImageGeneration } from "./Image";
 import { CardSection } from "./GoogleChat";
+import { asString } from "./typeutil";
 
 // Chat completion API interface
 
@@ -86,6 +87,11 @@ export const PROP_CHAT_COMPLETION_INIT = "CHAT_COMPLETION_INIT";
 
 /** Default initialization sequence for a chat */
 const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
+
+/** Default instruction given to chat completion to use image illustrations */
+const DEFAULT_CHAT_COMPLETION_IMAGES_INSTRUCTION =
+    "You may include DALLE generated images in your responses using notation [DALLE: your prompt for image]. " +
+    "Use it only when an image illustration would provide additional information that can not be described by text.";
 
 /** Property key for instructions mapped by space */
 const PROP_INSTRUCTIONS = "_instructions";
@@ -287,8 +293,7 @@ function getChatCompletionInit(): ChatCompletionMessage[] {
     if (getChatCompletionImages()) {
         init.push({
             role: "user",
-            content:
-                "You may include DALLE generated images in your responses using notation [DALLE: your prompt for image]. Use it only when an image illustration would be provide additional information that can not be described by text.",
+            content: getChatCompletionImagesInstruction(),
         });
     }
     return init;
@@ -299,6 +304,12 @@ function getChatCompletionInit(): ChatCompletionMessage[] {
  */
 function getChatCompletionImages(): boolean {
     return getBooleanProperty("CHAT_COMPLETION_IMAGES") ?? false;
+}
+
+function getChatCompletionImagesInstruction(): string {
+    return (
+        asString(getJSONProperty("CHAT_COMPLETION_IMAGES_INSTRUCTION")) ?? DEFAULT_CHAT_COMPLETION_IMAGES_INSTRUCTION
+    );
 }
 
 /**

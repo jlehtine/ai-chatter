@@ -265,6 +265,12 @@ them over the chat interface in a one-to-one chat with the app.
   instructions are added to any existing chat completion initialization
   sequence.
 
+- `CHAT_COMPLETION_IMAGES_INSTRUCTION`  
+  JSON string value, default is
+  `"You may include DALLE generated images in your responses using notation [DALLE: your prompt for image]. Use it only when an image illustration would provide additional information that can not be described by text."`  
+  This property specifies the initialization sequence instruction given to the
+  chat completion for it to use generated images as illustrations.
+
 - `CHAT_COMPLETION_SHOW_TOKENS`  
   `true` or `false`, default is `false`  
   OpenAI chat completion API uses tokens for pricing. This property specifies
