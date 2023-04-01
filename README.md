@@ -283,7 +283,9 @@ them over the chat interface in a one-to-one chat with the app.
   replaced by the original image prompt. This value is then sent to the chat
   completion API and its response is used as input to image generation API. A
   typical use case would be to translate image prompts to English for a better
-  response.
+  response.  
+  _Example of a potential value:_  
+  `"Output only the following text in English:\n\n<image prompt>"`
 
 - `LOG_GOOGLE_CHAT`  
   `true` or `false`, default is `false`  
