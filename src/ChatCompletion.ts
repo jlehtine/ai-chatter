@@ -11,6 +11,8 @@ import * as GoogleChat from "./GoogleChat";
 import { getOpenAIAPIKey } from "./OpenAIAPI";
 import { checkModeration } from "./Moderation";
 import { millisNow, MillisSinceEpoch } from "./Timestamp";
+import { requestNativeImageGeneration } from "./Image";
+import { CardSection } from "./GoogleChat";
 
 // Chat completion API interface
 
@@ -118,10 +120,37 @@ export function requestChatCompletion(
 ): GoogleChat.ResponseMessage {
     // Make native chat completion request
     const response = requestNativeChatCompletion(messages, user, space, skipInit);
-    const responseText = getChatCompletionText(response);
+    let responseText = getChatCompletionText(response);
 
     // Moderate output
     checkModeration(responseText);
+
+    // Generate images if they were included in the response
+    const imageSections: CardSection[] = [];
+    if (getChatCompletionImages()) {
+        responseText = responseText.replaceAll(/\[\s*DALLE\s*[:\s]\s*([^\]]*)\]/gi, (m, p) => {
+            try {
+                const response = requestNativeImageGeneration(p, undefined, 1, "512x512");
+                response.data.forEach((img) => {
+                    imageSections.push({
+                        header: '"' + p + '"',
+                        widgets: [
+                            {
+                                image: {
+                                    imageUrl: img.url,
+                                },
+                            },
+                        ],
+                        collapsible: false,
+                    });
+                });
+            } catch (err) {
+                // Log error but continue without images
+                console.error(err);
+            }
+            return "";
+        });
+    }
 
     // Format completion result
     const showTokens = getShowTokens();
@@ -139,6 +168,9 @@ export function requestChatCompletion(
             tokenUsage += "\nTotal cost: $" + tokenPrice * response.usage.total_tokens;
         }
         GoogleChat.addDecoratedTextCard(chatResponse, "tokens", "Token usage", tokenUsage);
+    }
+    if (imageSections.length > 0) {
+        GoogleChat.addCardWithSections(chatResponse, "images", imageSections);
     }
     return chatResponse;
 }
@@ -252,7 +284,21 @@ function getChatCompletionInit(): ChatCompletionMessage[] {
     if (!isValidInit(init)) {
         throw new ChatCompletionConfigurationError("Invalid initialization sequence: " + PROP_CHAT_COMPLETION_INIT);
     }
+    if (getChatCompletionImages()) {
+        init.push({
+            role: "user",
+            content:
+                "You may include DALLE generated images in your responses using notation [DALLE: your prompt for image]. Use it only when an image illustration would be provide additional information that can not be described by text.",
+        });
+    }
     return init;
+}
+
+/**
+ * Returns whether to generate images from chat completion responses.
+ */
+function getChatCompletionImages(): boolean {
+    return getBooleanProperty("CHAT_COMPLETION_IMAGES") ?? false;
 }
 
 /**

@@ -194,26 +194,33 @@ export function addDecoratedTextCard(
     text: string,
     formattedHeader?: string
 ): void {
+    addCardWithSections(message, cardId, [
+        {
+            header: formattedHeader ?? header,
+            widgets: [
+                {
+                    decoratedText: {
+                        text: text,
+                        wrapText: true,
+                    },
+                },
+            ],
+            collapsible: false,
+        },
+    ]);
+}
+
+/**
+ * Adds a card with specified sections to the specified message.
+ */
+export function addCardWithSections(message: ResponseMessage, cardId: string, sections: CardSection[]) {
     if (!message.cardsV2) {
         message.cardsV2 = [];
     }
     message.cardsV2.push({
         cardId: cardId,
         card: {
-            sections: [
-                {
-                    header: formattedHeader ?? header,
-                    widgets: [
-                        {
-                            decoratedText: {
-                                text: text,
-                                wrapText: true,
-                            },
-                        },
-                    ],
-                    collapsible: false,
-                },
-            ],
+            sections: sections,
         },
     });
 }

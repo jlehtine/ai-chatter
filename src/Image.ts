@@ -63,33 +63,7 @@ export function requestImageGeneration(
             imageSize = "1024x1024";
         }
     }
-    const url = getImageGenerationUrl();
-    const apiKey = getOpenAIAPIKey();
-    const request = createImageGenerationRequest(prompt, user, n, imageSize);
-    const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
-    const params = {
-        method: method,
-        headers: {
-            Authorization: "Bearer " + apiKey,
-        },
-        contentType: "application/json",
-        payload: JSON.stringify(request),
-    };
-    if (getLogImage()) {
-        console.log("Image generation request:\n" + JSON.stringify(request, null, 2));
-    }
-
-    // Make image generation request and parse response
-    let response: ImageGenerationResponse;
-    try {
-        const httpResponse = UrlFetchApp.fetch(url, params);
-        response = toImageGenerationResponse(httpResponse);
-        if (getLogImage()) {
-            console.log("Image generation response:\n" + JSON.stringify(response, null, 2));
-        }
-    } catch (err) {
-        throw new ImageGenerationError("Error while doing image generation", err);
-    }
+    const response = requestNativeImageGeneration(prompt, user, n, imageSize);
 
     // Format results
     const chatResponse = GoogleChat.decoratedTextResponse("images", "Generated images", '"' + prompt + '"');
@@ -123,14 +97,53 @@ export function requestImageGeneration(
     return chatResponse;
 }
 
+/**
+ * Requests image generation and returns the native response.
+ */
+export function requestNativeImageGeneration(
+    prompt: string,
+    user?: string,
+    n = 1,
+    imageSize?: ImageSize
+): ImageGenerationResponse {
+    const url = getImageGenerationUrl();
+    const apiKey = getOpenAIAPIKey();
+    const request = createImageGenerationRequest(prompt, user, n, imageSize);
+    const method: GoogleAppsScript.URL_Fetch.HttpMethod = "post";
+    const params = {
+        method: method,
+        headers: {
+            Authorization: "Bearer " + apiKey,
+        },
+        contentType: "application/json",
+        payload: JSON.stringify(request),
+    };
+    if (getLogImage()) {
+        console.log("Image generation request:\n" + JSON.stringify(request, null, 2));
+    }
+
+    // Make image generation request and parse response
+    let response: ImageGenerationResponse;
+    try {
+        const httpResponse = UrlFetchApp.fetch(url, params);
+        response = toImageGenerationResponse(httpResponse);
+        if (getLogImage()) {
+            console.log("Image generation response:\n" + JSON.stringify(response, null, 2));
+        }
+    } catch (err) {
+        throw new ImageGenerationError("Error while doing image generation", err);
+    }
+    return response;
+}
+
 function getImageGenerationUrl(): string {
     return getStringProperty("IMAGE_GENERATION_URL") ?? "https://api.openai.com/v1/images/generations";
 }
 
 function createImageGenerationRequest(
     prompt: string,
-    user: string,
-    n: number,
+    user?: string,
+    n?: number,
     imageSize?: ImageSize
 ): ImageGenerationRequest {
     return {

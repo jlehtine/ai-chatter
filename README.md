@@ -258,6 +258,13 @@ them over the chat interface in a one-to-one chat with the app.
   chat completion API. Instead of setting this property directly, it is easier
   to just use `/init` command to set the initialization prompt.
 
+- `CHAT_COMPLETION_IMAGES`  
+  `true` or `false`, default is `false`  
+  If this property is set to `true` then the app will instruct chat completion
+  to use generated images as illustrations in its responses. Required
+  instructions are added to any existing chat completion initialization
+  sequence.
+
 - `CHAT_COMPLETION_SHOW_TOKENS`  
   `true` or `false`, default is `false`  
   OpenAI chat completion API uses tokens for pricing. This property specifies
