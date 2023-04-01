@@ -104,7 +104,7 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Bo
     if (!match) {
         throw new CommandError('Unrecognized command format, try "/help"');
     }
-    const cmd = match[1];
+    const cmd = match[1].toLowerCase();
     const arg = match[2];
     if (cmd === "help") {
         return commandHelp(event.message);
@@ -240,7 +240,7 @@ function commandImage(arg: string | undefined, message: GoogleChat.Message): Goo
 
     // Parse number of images anywhere within the prompt
     let n = undefined;
-    const matchN = prompt ? prompt.match(/^(.*?\s|)(?:n=(\d+))(\s.*|)$/s) : undefined;
+    const matchN = prompt ? prompt.match(/^(.*?\s|)(?:[nN]=(\d+))(\s.*|)$/s) : undefined;
     if (matchN) {
         n = Number(matchN[2]);
         prompt = matchN[1] + matchN[3];
