@@ -172,10 +172,10 @@ Google Workspaces domain then you have to specifically allow the chat app
 
 This chat app is configured using script properties.
 
-Please note that also chat histories and per-space language model instsructions
-are stored as script properties. These properties have a property name with
-prefix `_history` or `_instructions` and they are used as runtime data, not for
-configuration.
+Please note that also chat histories and chat space specific configuration are
+stored as script properties. These properties have a property name with prefix
+`_history` or `_configuration` and they should be modified only via the chat
+app.
 
 ### Sensitive properties
 

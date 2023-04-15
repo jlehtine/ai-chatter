@@ -1,4 +1,4 @@
-import { requestChatCompletion, setInstructions } from "./ChatCompletion";
+import { removeConfigurationForSpace, requestChatCompletion } from "./ChatCompletion";
 import { checkForCommand, commandIntro } from "./Commands";
 import { isChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
@@ -76,8 +76,8 @@ function onAddToSpace(): GoogleChat.BotResponse {
  * Responds to being removed from a space or chat.
  */
 function onRemoveFromSpace(event: GoogleChat.OnSpaceEvent): void {
-    // Clear instructions for the space
-    setInstructions(event.space.name);
+    // Remove configuration for the space
+    removeConfigurationForSpace(event.space.name);
 
     // Remove histories associated with the space
     removeHistoriesForSpace(event.space);

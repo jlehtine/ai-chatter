@@ -77,17 +77,18 @@ class ChatCompletionError extends ChatError {
     }
 }
 
-interface InstructionsProp {
-    instructions: { [key: string]: InstructionsConf };
+/** Chat completion configuration by space */
+interface ConfigurationProp {
+    configurationBySpace: { [key: string]: Configuration };
 }
 
-interface InstructionsConf {
+interface Configuration {
     used: MillisSinceEpoch;
-    content: string;
+    instructions?: string;
 }
 
-function isInstructionsProp(obj: unknown): obj is InstructionsProp {
-    return typeof (obj as InstructionsProp)?.instructions === "object";
+function isConfigurationProp(obj: unknown): obj is ConfigurationProp {
+    return typeof (obj as ConfigurationProp)?.configurationBySpace === "object";
 }
 
 /** Property key for the initialization sequence of a chat */
@@ -101,8 +102,8 @@ const DEFAULT_CHAT_COMPLETION_IMAGES_INSTRUCTION =
     "You may include DALL·E generated images in your responses using notation [DALLE: your prompt for image]. " +
     "Use images only when user asks for images or when the response requires visual output.";
 
-/** Property key for instructions mapped by space */
-const PROP_INSTRUCTIONS = "_instructions";
+/** Property key for chat completion configuration mapped by space */
+const PROP_CONFIGURATION = "_configuration";
 
 const DAY_IN_MILLIS = 24 * 60 * 60 * 1000;
 
@@ -405,40 +406,74 @@ function isOkResponse(response: GoogleAppsScript.URL_Fetch.HTTPResponse): boolea
  * Returns the current instructions for the specified space.
  */
 export function getInstructions(space: string): string | undefined {
-    const instrProp = getInstructionsProp();
-    const instrConf = instrProp.instructions[space];
-    if (instrConf) {
-        const now = millisNow();
-        if (now - instrConf.used > DAY_IN_MILLIS) {
-            instrConf.used = now;
-            setJSONProperty(PROP_INSTRUCTIONS, instrProp);
-        }
-        return instrConf.content;
-    } else {
-        return undefined;
-    }
+    return getConfiguration(space)?.instructions;
 }
 
 /**
  * Sets or clears instructions for the specified space.
  */
 export function setInstructions(space: string, instructions?: string): void {
-    const instrProp = getInstructionsProp();
-    if (instructions !== undefined) {
-        instrProp.instructions[space] = { used: millisNow(), content: instructions };
-    } else {
-        delete instrProp.instructions[space];
-    }
-    setJSONProperty(PROP_INSTRUCTIONS, instrProp);
+    updateConfiguration(space, (conf) => {
+        conf.instructions = instructions;
+    });
 }
 
-function getInstructionsProp(): InstructionsProp {
-    const instrProp = getJSONProperty(PROP_INSTRUCTIONS);
-    if (isInstructionsProp(instrProp)) {
-        return instrProp;
+/**
+ * Removes configuration for the specified space.
+ */
+export function removeConfigurationForSpace(space: string): void {
+    const confProp = getConfigurationProp();
+    delete confProp.configurationBySpace[space];
+    setConfigurationProp(confProp);
+}
+
+function updateConfiguration(space: string, update: (conf: Configuration) => void): Configuration {
+    const confProp = getConfigurationProp();
+    let conf = confProp.configurationBySpace[space];
+    const now = millisNow();
+    if (!conf) {
+        conf = { used: now };
+        confProp.configurationBySpace[space] = conf;
     } else {
-        return { instructions: {} };
+        conf.used = now;
     }
+    update(conf);
+
+    // Remove configuration if it is all defaults
+    if (conf.instructions === undefined) {
+        delete confProp.configurationBySpace[space];
+    }
+
+    setConfigurationProp(confProp);
+    return conf;
+}
+
+function getConfiguration(space: string): Configuration | undefined {
+    const confProp = getConfigurationProp();
+    const conf = confProp.configurationBySpace[space];
+    if (conf) {
+        const now = millisNow();
+        if (now - conf.used > DAY_IN_MILLIS) {
+            conf.used = now;
+            setJSONProperty(PROP_CONFIGURATION, confProp);
+        }
+        return conf;
+    } else {
+        return undefined;
+    }
+}
+
+function getConfigurationProp(): ConfigurationProp {
+    const confProp = getJSONProperty(PROP_CONFIGURATION);
+    if (isConfigurationProp(confProp)) {
+        return confProp;
+    } else {
+        return { configurationBySpace: {} };
+    }
+}
+
+function setConfigurationProp(confProp: ConfigurationProp) {
+    setJSONProperty(PROP_CONFIGURATION, confProp);
 }
 
 /**
