@@ -90,8 +90,8 @@ const DEFAULT_CHAT_INIT: ChatCompletionInitialization = [];
 
 /** Default instruction given to chat completion to use image illustrations */
 const DEFAULT_CHAT_COMPLETION_IMAGES_INSTRUCTION =
-    "You may include DALLE generated images in your responses using notation [DALLE: your prompt for image]. " +
-    "Use it only when an image illustration would provide additional information that can not be described by text.";
+    "You may include DALL·E generated images in your responses using notation [DALLE: your prompt for image]. " +
+    "Use images only when user asks for images or when the response requires visual output.";
 
 /** Property key for instructions mapped by space */
 const PROP_INSTRUCTIONS = "_instructions";
