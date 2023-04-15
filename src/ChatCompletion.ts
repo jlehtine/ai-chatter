@@ -13,7 +13,7 @@ import { checkModeration } from "./Moderation";
 import { millisNow, MillisSinceEpoch } from "./Timestamp";
 import { requestNativeImageGeneration } from "./Image";
 import { CardSection } from "./GoogleChat";
-import { asString } from "./typeutil";
+import { asStringOpt } from "./typeutil";
 
 // Chat completion API interface
 
@@ -310,7 +310,7 @@ function getChatCompletionImages(): boolean {
 
 function getChatCompletionImagesInstruction(): string {
     return (
-        asString(getJSONProperty("CHAT_COMPLETION_IMAGES_INSTRUCTION")) ?? DEFAULT_CHAT_COMPLETION_IMAGES_INSTRUCTION
+        asStringOpt(getJSONProperty("CHAT_COMPLETION_IMAGES_INSTRUCTION")) ?? DEFAULT_CHAT_COMPLETION_IMAGES_INSTRUCTION
     );
 }
 
