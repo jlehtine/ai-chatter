@@ -21,6 +21,14 @@ import { asStringOpt } from "./typeutil";
 interface ChatCompletionRequest {
     model: string;
     messages: ChatCompletionMessage[];
+    temperature?: number;
+    top_p?: number;
+    n?: number;
+    stream?: boolean;
+    stop?: string | string[];
+    max_tokens?: number;
+    presence_penalty?: number;
+    frequency_penalty?: number;
     user?: string;
 }
 
@@ -265,6 +273,7 @@ function createChatCompletionRequest(
 
     return {
         model: getChatCompletionModel(),
+        temperature: getChatCompletionTemperature(),
         messages: ccmsgs,
         user: user,
     };
@@ -282,6 +291,11 @@ function getLogChatCompletion(): boolean {
 /** Returns the chat completion model to be used */
 function getChatCompletionModel(): string {
     return getStringProperty("CHAT_COMPLETION_MODEL") ?? "gpt-3.5-turbo";
+}
+
+/** Returns the chat completion temperature parameter value */
+function getChatCompletionTemperature(): number | undefined {
+    return getNumberProperty("CHAT_COMPLETION_TEMPERATURE");
 }
 
 /**

@@ -248,6 +248,11 @@ them over the chat interface in a one-to-one chat with the app.
   default is `gpt-3.5-turbo`  
   OpenAI chat completion model to use.
 
+- `CHAT_COMPLETION_TEMPERATURE`  
+  default is the API default value (1)  
+  Chat completion API `temperature` parameter, a value between 0 and 2. See the
+  [API reference](https://platform.openai.com/docs/api-reference/chat).
+
 - `CHAT_COMPLETION_INIT`  
   default is an empty array `[]`  
   This property can be used to specify a chat completion initialization
