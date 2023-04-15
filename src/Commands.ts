@@ -432,7 +432,7 @@ function commandConfigSet(space: string, option: string, value?: string): string
     } else {
         throw new CommandError(INVALID_ARGS_MSG);
     }
-    return "Configuration option set:\n" + "```\n" + option + ": " + (value ?? "(cleared)") + "```";
+    return "Configuration option set:\n`" + option + ": " + (value ?? "(cleared)") + "`";
 }
 
 function numericOptionValue(option: string, value?: string): number | undefined {
