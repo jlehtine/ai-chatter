@@ -294,7 +294,7 @@ function getChatCompletionInit(): ChatCompletionMessage[] {
     }
     if (getChatCompletionImages()) {
         init.push({
-            role: "user",
+            role: "system",
             content: getChatCompletionImagesInstruction(),
         });
     }
