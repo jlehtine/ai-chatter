@@ -2,6 +2,7 @@ import {
     ChatCompletionInitialization,
     getConfiguration,
     getInstructions,
+    getTemperatureOptionDefaultValue,
     PROP_CHAT_COMPLETION_INIT,
     removeConfigurationForSpace,
     requestChatCompletion,
@@ -23,10 +24,13 @@ import {
     setStringProperty,
 } from "./Properties";
 import { millisNow } from "./Timestamp";
-import { asString, asStringOpt, requireNotNull } from "./typeutil";
+import { asNumber, asString, asStringOpt, requireNotNull } from "./typeutil";
 
 const COMMAND_PREFIX = "/";
 const COMMAND_REGEX = /^\/([A-Za-z_]\w*)(?:\s+(.*)|)$/s;
+const PROPERTY_VALUE_REGEX = /^([A-Za-z_]\w*)(?:\s+(.*))?$/s;
+const OPTION_VALUE_REGEX = PROPERTY_VALUE_REGEX;
+const DECIMAL_VALUE_REGEX = /^-?(?:(?:0|[1-9]\d*)|(?:0|[1-9]\d*)?\.\d+)$/;
 
 const DEFAULT_INTRODUCTION =
     "Hi! I'm a chat app. " +
@@ -80,7 +84,12 @@ const DEFAULT_HELP_TEXT_CONFIG =
     "\n" +
     "```\n" +
     "Configuration options for a chat space:\n" +
-    "  instruct                 prompt text for instructing the AI\n" +
+    "  instruct                 text for instructing the language model\n" +
+    "                             (inserted at the beginning of each conversation)\n" +
+    "  temperature              sampling temperature between 0.0 and 2.0\n" +
+    "                             (higher values produce more random output)\n" +
+    "\n" +
+    "To see current or default values, use: /config\n" +
     "```";
 
 const INVALID_ARGS_MSG = "Invalid command arguments";
@@ -96,7 +105,11 @@ const PROP_IMAGE_PROMPT_TRANSLATION = "IMAGE_PROMPT_TRANSLATION";
 
 const JSON_STRING_PROPS = [PROP_INTRODUCTION, PROP_INTRODUCTION_PROMPT, PROP_HELP_TEXT, PROP_IMAGE_PROMPT_TRANSLATION];
 
-class CommandError extends ChatError {}
+class CommandError extends ChatError {
+    constructor(message: string, cause: unknown = undefined, name = "CommandError") {
+        super(message, name, cause);
+    }
+}
 
 class UnauthorizedError extends CommandError {}
 
@@ -369,31 +382,16 @@ function commandConfig(arg: string | undefined, message: GoogleChat.Message): Go
 
     // Check if showing requested
     else if (arg === undefined || lcarg === "") {
-        const conf = getConfiguration(message.space.name);
-        if (conf === undefined) {
-            resp = "No configuration specified for this chat space, using defaults.";
-        } else {
-            resp = "```\n" + "instruct: " + (conf.instructions ?? "(none)") + "\n" + "```";
-        }
+        resp = commandConfigShow(message.space.name);
     }
 
     // Otherwise assume that setting a configuration option
     else {
-        const match = arg.trim().match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/s);
+        const match = arg.trim().match(OPTION_VALUE_REGEX);
         if (match) {
             const option = match[1];
             const value = match.length > 2 ? match[2] : undefined;
-            if (option === "instruct") {
-                if (value !== undefined) {
-                    checkModeration(value);
-                }
-                updateConfiguration(message.space.name, (conf) => {
-                    conf.instructions = value;
-                });
-            } else {
-                throw new CommandError(INVALID_ARGS_MSG);
-            }
-            resp = "Configuration option set:\n" + "```\n" + option + ": " + (value ?? "(cleared)") + "```";
+            resp = commandConfigSet(message.space.name, option, value);
         } else {
             throw new CommandError(INVALID_ARGS_MSG);
         }
@@ -401,6 +399,54 @@ function commandConfig(arg: string | undefined, message: GoogleChat.Message): Go
 
     // Return response
     return GoogleChat.textResponse(resp);
+}
+
+function commandConfigShow(space: string): string {
+    const orgConf = getConfiguration(space);
+    const conf = orgConf ?? { used: millisNow() };
+    return (
+        (orgConf === undefined ? "No configuration specified for this chat space, using defaults.\n" : "") +
+        "```\n" +
+        ("instruct: " + (conf.instructions ?? "<none> (default)") + "\n") +
+        ("temperature: " + (conf.temperature ?? getTemperatureOptionDefaultValue() + " (default)") + "\n") +
+        "```"
+    );
+}
+
+function commandConfigSet(space: string, option: string, value?: string): string {
+    if (option === "instruct") {
+        if (value !== undefined) {
+            checkModeration(value);
+        }
+        updateConfiguration(space, (conf) => {
+            conf.instructions = value;
+        });
+    } else if (option === "temperature") {
+        const valueNum = numericOptionValue(option, value);
+        if (valueNum !== undefined && (valueNum < 0 || valueNum > 2)) {
+            throw new CommandError("Value of option 'temperature' must be between 0.0 and 2.0");
+        }
+        updateConfiguration(space, (conf) => {
+            conf.temperature = valueNum;
+        });
+    } else {
+        throw new CommandError(INVALID_ARGS_MSG);
+    }
+    return "Configuration option set:\n" + "```\n" + option + ": " + (value ?? "(cleared)") + "```";
+}
+
+function numericOptionValue(option: string, value?: string): number | undefined {
+    let valueNum: number | undefined = undefined;
+    if (value !== undefined) {
+        if (value.match(DECIMAL_VALUE_REGEX)) {
+            try {
+                valueNum = asNumber(JSON.parse(value));
+            } catch (err) {
+                throw new CommandError("Option '" + option + "' value must be numeric, e.g. 1.0", err);
+            }
+        }
+    }
+    return valueNum;
 }
 
 function getHelpTextConfig(): string {
@@ -519,7 +565,7 @@ function commandSet(arg: string | undefined, message: GoogleChat.Message): Googl
     checkAdmin(message);
 
     // Parse arguments
-    const match = arg?.trim().match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/s);
+    const match = arg?.trim().match(PROPERTY_VALUE_REGEX);
     if (match) {
         const key = match[1];
         if (key === PROP_OPENAI_API_KEY || key === PROP_ADMINS || key.startsWith("_")) {

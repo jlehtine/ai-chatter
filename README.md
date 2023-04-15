@@ -375,6 +375,10 @@ app.
     is inserted at the beginning of each conversation and it can be used to
     control the language model behaviour. For example: _"Reply with binary ones
     and zeros only."_
+  - `temperature`: Chat completion API `temperature` parameter, a value between
+    0 and 2. See the
+    [API reference](https://platform.openai.com/docs/api-reference/chat).
+    Overrides the `CHAT_COMPLETION_TEMPERATURE` script property.
 
 ### Administrative commands
 

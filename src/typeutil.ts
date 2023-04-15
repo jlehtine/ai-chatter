@@ -20,6 +20,18 @@ export function asStringOpt(value: unknown): string | undefined {
     }
 }
 
+export function isNumber(value: unknown): value is number {
+    return typeof value === "number";
+}
+
+export function asNumber(value: unknown): number {
+    if (isNumber(value)) {
+        return value;
+    } else {
+        throw new Error("Expected a number but got " + typeof value);
+    }
+}
+
 export function requireNotNull<T>(value: T | null): T {
     if (value !== null) {
         return value;

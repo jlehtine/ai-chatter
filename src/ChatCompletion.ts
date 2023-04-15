@@ -85,6 +85,7 @@ interface ConfigurationProp {
 interface Configuration {
     used: MillisSinceEpoch;
     instructions?: string;
+    temperature?: number;
 }
 
 function isConfigurationProp(obj: unknown): obj is ConfigurationProp {
@@ -263,6 +264,11 @@ function createChatCompletionRequest(
     space?: string,
     skipInit = false
 ): ChatCompletionRequest {
+    // Determine chat completion temperature parameter
+    const temperature =
+        (skipInit || space === undefined ? undefined : getConfiguration(space)?.temperature) ??
+        getChatCompletionTemperature();
+
     // Find instructions for this space, unless all initialization skipped
     const instr = skipInit || space === undefined ? undefined : getInstructions(space);
     const instrMsgs = instr === undefined ? [] : [toChatCompletionUserMessage(instr)];
@@ -274,7 +280,7 @@ function createChatCompletionRequest(
 
     return {
         model: getChatCompletionModel(),
-        temperature: getChatCompletionTemperature(),
+        temperature: temperature,
         messages: ccmsgs,
         user: user,
     };
@@ -297,6 +303,11 @@ function getChatCompletionModel(): string {
 /** Returns the chat completion temperature parameter value */
 function getChatCompletionTemperature(): number | undefined {
     return getNumberProperty("CHAT_COMPLETION_TEMPERATURE");
+}
+
+/** Returns the default value for 'temperature' option */
+export function getTemperatureOptionDefaultValue(): number {
+    return getChatCompletionTemperature() ?? 1;
 }
 
 /**
@@ -434,7 +445,7 @@ export function updateConfiguration(space: string, update: (conf: Configuration)
     update(conf);
 
     // Remove configuration if it is all defaults
-    if (conf.instructions === undefined) {
+    if (conf.instructions === undefined && conf.temperature === undefined) {
         delete confProp.configurationBySpace[space];
     }
 
