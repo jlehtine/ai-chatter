@@ -1,10 +1,12 @@
 import {
     ChatCompletionInitialization,
+    getConfiguration,
     getInstructions,
     PROP_CHAT_COMPLETION_INIT,
+    removeConfigurationForSpace,
     requestChatCompletion,
     requestSimpleCompletion,
-    setInstructions,
+    updateConfiguration,
 } from "./ChatCompletion";
 import { ChatError, logError } from "./Errors";
 import * as GoogleChat from "./GoogleChat";
@@ -57,9 +59,11 @@ const DEFAULT_HELP_TEXT =
     "  /image [n=<number of images>] [<size, e.g. 512x512>] <prompt>\n" +
     "                           create an image based on the prompt\n" +
     "  /again                   regenerate the last chat response or image\n" +
-    "  /instruct [<instructions>]\n" +
-    "                           set or clear AI instructions for this chat\n" +
     "  /history [clear]         show or clear chat history\n" +
+    "  /config help             help on configuration options\n" +
+    "  /config <option> [<value>]\n" +
+    "                           set or clear option for this chat space\n" +
+    "  /config [clear]          show or clear options for this chat space\n" +
     "<admin-commands>" +
     "```";
 
@@ -71,6 +75,14 @@ const HELP_TEXT_ADMIN =
     "  /set <property> [<value>]\n" +
     "                           set or clear the specified property\n";
 
+const DEFAULT_HELP_TEXT_CONFIG =
+    "*Configuration options*\n" +
+    "\n" +
+    "```\n" +
+    "Configuration options for a chat space:\n" +
+    "  instruct                 prompt text for instructing the AI\n" +
+    "```";
+
 const INVALID_ARGS_MSG = "Invalid command arguments";
 
 /** Property listing admin users */
@@ -79,6 +91,7 @@ const PROP_ADMINS = "ADMINS";
 const PROP_INTRODUCTION = "INTRODUCTION";
 const PROP_INTRODUCTION_PROMPT = "INTRODUCTION_PROMPT";
 const PROP_HELP_TEXT = "HELP_TEXT";
+const PROP_HELP_TEXT_CONFIG = "HELP_TEXT_CONFIG";
 const PROP_IMAGE_PROMPT_TRANSLATION = "IMAGE_PROMPT_TRANSLATION";
 
 const JSON_STRING_PROPS = [PROP_INTRODUCTION, PROP_INTRODUCTION_PROMPT, PROP_HELP_TEXT, PROP_IMAGE_PROMPT_TRANSLATION];
@@ -114,8 +127,8 @@ export function checkForCommand(event: GoogleChat.OnMessageEvent): GoogleChat.Bo
         return commandImage(arg, event.message);
     } else if (cmd === "again") {
         return commandAgain(arg, event.message);
-    } else if (cmd === "instruct") {
-        return commandInstruct(arg, event.message);
+    } else if (cmd === "config") {
+        return commandConfig(arg, event.message);
     } else if (cmd === "history") {
         return commandHistory(arg, event.message);
     } else if (cmd === "init") {
@@ -337,28 +350,61 @@ function commandAgain(arg: string | undefined, message: GoogleChat.Message): Goo
 }
 
 /**
- * Command "/instruct"
+ * Command "/config"
  */
-function commandInstruct(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
+function commandConfig(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
     let resp;
+    const lcarg = arg?.trim().toLowerCase();
 
-    // Set intructions
-    let instructions = arg?.trim();
-    if (instructions) {
-        checkModeration(instructions);
-        resp = "Instructions have been set for this space:\n" + instructions;
+    // Check if help requested
+    if (lcarg === "help") {
+        resp = getHelpTextConfig();
     }
 
-    // Or clear instructions
+    // Check if clearing requested
+    else if (lcarg === "clear") {
+        removeConfigurationForSpace(message.space.name);
+        resp = "Configuration has been cleared for this chat space.";
+    }
+
+    // Check if showing requested
+    else if (arg === undefined || lcarg === "") {
+        const conf = getConfiguration(message.space.name);
+        if (conf === undefined) {
+            resp = "No configuration specified for this chat space, using defaults.";
+        } else {
+            resp = "```\n" + "instruct: " + (conf.instructions ?? "(none)") + "\n" + "```";
+        }
+    }
+
+    // Otherwise assume that setting a configuration option
     else {
-        instructions = undefined;
-        resp = "Instructions have been cleared for this space.";
+        const match = arg.trim().match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/s);
+        if (match) {
+            const option = match[1];
+            const value = match.length > 2 ? match[2] : undefined;
+            if (option === "instruct") {
+                if (value !== undefined) {
+                    checkModeration(value);
+                }
+                updateConfiguration(message.space.name, (conf) => {
+                    conf.instructions = value;
+                });
+            } else {
+                throw new CommandError(INVALID_ARGS_MSG);
+            }
+            resp = "Configuration option set:\n" + "```\n" + option + ": " + (value ?? "(cleared)") + "```";
+        } else {
+            throw new CommandError(INVALID_ARGS_MSG);
+        }
     }
 
-    // Store updated instructions
-    setInstructions(message.space.name, instructions);
-
+    // Return response
     return GoogleChat.textResponse(resp);
+}
+
+function getHelpTextConfig(): string {
+    return asStringOpt(getJSONProperty(PROP_HELP_TEXT_CONFIG)) ?? DEFAULT_HELP_TEXT_CONFIG;
 }
 
 /**
@@ -367,7 +413,7 @@ function commandInstruct(arg: string | undefined, message: GoogleChat.Message): 
 function commandHistory(arg: string | undefined, message: GoogleChat.Message): GoogleChat.ResponseMessage {
     const history = getHistory(message, true);
     const instructions = getInstructions(message.space.name);
-    if (typeof arg === "string" && arg.trim() === "clear") {
+    if (arg?.trim().toLowerCase() === "clear") {
         history.messages = [];
         saveHistory(history);
     } else if (typeof arg !== "undefined") {
@@ -473,10 +519,7 @@ function commandSet(arg: string | undefined, message: GoogleChat.Message): Googl
     checkAdmin(message);
 
     // Parse arguments
-    let match = null;
-    if (arg) {
-        match = arg.trim().match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/s);
-    }
+    const match = arg?.trim().match(/^([A-Za-z_]\w*)(?:\s+(.*))?$/s);
     if (match) {
         const key = match[1];
         if (key === PROP_OPENAI_API_KEY || key === PROP_ADMINS || key.startsWith("_")) {

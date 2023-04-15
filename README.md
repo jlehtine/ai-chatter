@@ -360,15 +360,21 @@ app.
   get an alternative response. Also, if you experience timeout errors then this
   command can be used for repeating the timeouted request.
 
-- `/instruct [<instructions>]`  
-  Set or clear instructions given to the language model in this space. This can
-  be used to control the language model behaviour. For example: _"Reply with
-  binary ones and zeros only."_ The specified instructions will replace any
-  existing instructions for this space. If no instructions are specified then
-  any existing instructions are cleared.
-
 - `/history [clear]`  
   Show or clear chat history which is the basis for chat completion responses.
+
+- `/config help`  
+  `/config <option> [<value>]`  
+  `/config [clear]`  
+   Manage the configuration for the current chat space. Any user who can send chat
+  messages in the space can modify these configuration options. The first variant
+  shows help on available configuration options. The second variant sets or clears
+  a configuration option. The third variant shows or clears all configuration options
+  for the current chat space. The following configuration options are available.
+  - `instruct`: Text for instructing the language model in this space. The text
+    is inserted at the beginning of each conversation and it can be used to
+    control the language model behaviour. For example: _"Reply with binary ones
+    and zeros only."_
 
 ### Administrative commands
 

@@ -410,15 +410,6 @@ export function getInstructions(space: string): string | undefined {
 }
 
 /**
- * Sets or clears instructions for the specified space.
- */
-export function setInstructions(space: string, instructions?: string): void {
-    updateConfiguration(space, (conf) => {
-        conf.instructions = instructions;
-    });
-}
-
-/**
  * Removes configuration for the specified space.
  */
 export function removeConfigurationForSpace(space: string): void {
@@ -427,7 +418,10 @@ export function removeConfigurationForSpace(space: string): void {
     setConfigurationProp(confProp);
 }
 
-function updateConfiguration(space: string, update: (conf: Configuration) => void): Configuration {
+/**
+ * Update configuration of the specified space.
+ */
+export function updateConfiguration(space: string, update: (conf: Configuration) => void): Configuration {
     const confProp = getConfigurationProp();
     let conf = confProp.configurationBySpace[space];
     const now = millisNow();
@@ -448,7 +442,10 @@ function updateConfiguration(space: string, update: (conf: Configuration) => voi
     return conf;
 }
 
-function getConfiguration(space: string): Configuration | undefined {
+/**
+ * Returns configuration of the specified space.
+ */
+export function getConfiguration(space: string): Configuration | undefined {
     const confProp = getConfigurationProp();
     const conf = confProp.configurationBySpace[space];
     if (conf) {
