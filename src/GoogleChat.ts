@@ -175,7 +175,7 @@ export function decoratedTextResponse(
     cardId: string,
     header: string,
     text: string,
-    formattedHeader?: string
+    formattedHeader?: string,
 ): ResponseMessage {
     const message: ResponseMessage = {
         fallbackText: header + ": " + text,
@@ -192,7 +192,7 @@ export function addDecoratedTextCard(
     cardId: string,
     header: string,
     text: string,
-    formattedHeader?: string
+    formattedHeader?: string,
 ): void {
     addCardWithSections(message, cardId, [
         {

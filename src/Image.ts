@@ -48,7 +48,7 @@ export function requestImageGeneration(
     prompt: string,
     user: string,
     n = 1,
-    imageSize?: ImageSize
+    imageSize?: ImageSize,
 ): GoogleChat.ResponseMessage {
     // Prepare image generation request
     if (n !== Math.round(n) || n < 1 || n > 10) {
@@ -104,7 +104,7 @@ export function requestNativeImageGeneration(
     prompt: string,
     user?: string,
     n = 1,
-    imageSize?: ImageSize
+    imageSize?: ImageSize,
 ): ImageGenerationResponse {
     const url = getImageGenerationUrl();
     const apiKey = getOpenAIAPIKey();
@@ -144,7 +144,7 @@ function createImageGenerationRequest(
     prompt: string,
     user?: string,
     n?: number,
-    imageSize?: ImageSize
+    imageSize?: ImageSize,
 ): ImageGenerationRequest {
     return {
         prompt: prompt,
@@ -169,7 +169,7 @@ function toImageGenerationResponse(httpResponse: GoogleAppsScript.URL_Fetch.HTTP
     if (!isOkResponse(httpResponse)) {
         throw new ImageGenerationError(
             "Received an error response from the image generation API",
-            "HTTP response code " + httpResponse.getResponseCode()
+            "HTTP response code " + httpResponse.getResponseCode(),
         );
     }
     const responseText = httpResponse.getContentText();

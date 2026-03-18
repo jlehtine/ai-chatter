@@ -132,7 +132,7 @@ export function requestChatCompletion(
     messages: ChatHistoryMessage[],
     user?: string,
     space?: string,
-    skipInit = false
+    skipInit = false,
 ): GoogleChat.ResponseMessage {
     // Make native chat completion request
     const response = requestNativeChatCompletion(messages, user, space, skipInit);
@@ -163,7 +163,7 @@ export function requestChatCompletion(
                     });
                 } catch (err) {
                     // Log error but continue without images
-                    console.error(err);
+                    console.error(formatError(err));
                 }
                 return "";
             })
@@ -197,7 +197,7 @@ function requestNativeChatCompletion(
     messages: ChatHistoryMessage[],
     user?: string,
     space?: string,
-    skipInit = false
+    skipInit = false,
 ): ChatCompletionResponse {
     // Prepare chat completion request
     const url = getChatCompletionURL();
@@ -262,7 +262,7 @@ function createChatCompletionRequest(
     messages: ChatHistoryMessage[],
     user?: string,
     space?: string,
-    skipInit = false
+    skipInit = false,
 ): ChatCompletionRequest {
     // Determine chat completion temperature parameter
     const temperature =
@@ -391,7 +391,7 @@ function toChatCompletionResponse(response: GoogleAppsScript.URL_Fetch.HTTPRespo
     if (!isOkResponse(response)) {
         throw new ChatCompletionError(
             "Received an error response from the chat completion API",
-            "HTTP response code " + response.getResponseCode()
+            "HTTP response code " + response.getResponseCode(),
         );
     }
     const responseData = response.getContentText();
@@ -496,4 +496,18 @@ function getShowTokens(): boolean {
  */
 function getChatCompletionTokenPrice(): number | void {
     return getNumberProperty("CHAT_COMPLETION_TOKEN_PRICE");
+}
+
+/**
+ * Formats the specified error for logging and display purposes.
+ *
+ * @param err thrown error
+ * @return a string or object to be logged
+ */
+function formatError(err: unknown): string | object {
+    if ((typeof err === "string" || typeof err === "object") && err !== null) {
+        return err;
+    } else {
+        return String(err);
+    }
 }

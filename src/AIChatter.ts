@@ -37,7 +37,7 @@ function onMessage(event: GoogleChat.OnMessageEvent): GoogleChat.BotResponse {
                 completionResponse = requestChatCompletion(
                     history.messages,
                     event.message.sender.name,
-                    event.message.space.name
+                    event.message.space.name,
                 );
             } catch (err) {
                 // If something goes wrong then save at least the input message in history
@@ -98,7 +98,7 @@ function errorResponse(err: unknown): GoogleChat.BotResponse {
         "error",
         "ERROR",
         errorMessage,
-        '<font color="#ff0000"><b>ERROR<b/></font>'
+        '<font color="#ff0000"><b>ERROR<b/></font>',
     );
 }
 

@@ -94,7 +94,7 @@ function toModerationResponse(httpResponse: GoogleAppsScript.URL_Fetch.HTTPRespo
     if (!isOkResponse(httpResponse)) {
         throw new ModerationError(
             "Received an error response from the moderation API",
-            "HTTP response code " + httpResponse.getResponseCode()
+            "HTTP response code " + httpResponse.getResponseCode(),
         );
     }
     const responseText = httpResponse.getContentText();

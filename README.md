@@ -273,8 +273,9 @@ them over the chat interface in a one-to-one chat with the app.
 - `CHAT_COMPLETION_IMAGES_INSTRUCTION`  
   JSON string value, default is
   `"You may include DALLE generated images in your responses using notation [DALLE: your prompt for image]. Use it only when an image illustration would provide additional information that can not be described by text."`  
-  This property specifies the initialization sequence instruction given to the
-  chat completion for it to use generated images as illustrations.
+  This
+  property specifies the initialization sequence instruction given to the chat
+  completion for it to use generated images as illustrations.
 
 - `CHAT_COMPLETION_SHOW_TOKENS`  
   `true` or `false`, default is `false`  
@@ -366,11 +367,12 @@ app.
 - `/config help`  
   `/config <option> [<value>]`  
   `/config [clear]`  
-   Manage the configuration for the current chat space. Any user who can send chat
-  messages in the space can modify these configuration options. The first variant
-  shows help on available configuration options. The second variant sets or clears
-  a configuration option. The third variant shows or clears all configuration options
-  for the current chat space. The following configuration options are available.
+   Manage the configuration for the current chat space. Any user who can send
+  chat messages in the space can modify these configuration options. The first
+  variant shows help on available configuration options. The second variant sets
+  or clears a configuration option. The third variant shows or clears all
+  configuration options for the current chat space. The following configuration
+  options are available.
   - `instruct`: Text for instructing the language model in this space. The text
     is inserted at the beginning of each conversation and it can be used to
     control the language model behaviour. For example: _"Reply with binary ones

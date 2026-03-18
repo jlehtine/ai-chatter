@@ -198,7 +198,7 @@ function commandHelp(message: GoogleChat.Message): GoogleChat.ResponseMessage {
     return GoogleChat.textResponse(
         getHelpText()
             .replace("<admin-commands>", isAdmin(message) ? HELP_TEXT_ADMIN : "")
-            .replaceAll("<chat app name>", getChatAppName())
+            .replaceAll("<chat app name>", getChatAppName()),
     );
 }
 
@@ -238,7 +238,7 @@ export function commandIntro(): GoogleChat.ResponseMessage {
 function getIntroduction(): string {
     return (asStringOpt(getJSONProperty(PROP_INTRODUCTION)) ?? DEFAULT_INTRODUCTION).replaceAll(
         "<chat app name>",
-        getChatAppName()
+        getChatAppName(),
     );
 }
 
@@ -472,7 +472,7 @@ function commandHistory(arg: string | undefined, message: GoogleChat.Message): G
                 : "*Chat history:*" +
                   history.messages
                       .map((m) => "\n\n_" + (m.role === ROLE_ASSISTANT ? "Assistant" : "User") + ":_\n" + m.text)
-                      .join(""))
+                      .join("")),
     );
 }
 
@@ -492,7 +492,7 @@ function commandInit(arg: string | undefined, message: GoogleChat.Message): Goog
         ];
         setJSONProperty(PROP_CHAT_COMPLETION_INIT, initSeq);
         return GoogleChat.textResponse(
-            "Chat completion initialization sequence:\n```\n" + JSON.stringify(initSeq, null, 2) + "\n```"
+            "Chat completion initialization sequence:\n```\n" + JSON.stringify(initSeq, null, 2) + "\n```",
         );
     }
 
